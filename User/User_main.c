@@ -21,8 +21,12 @@ OS_TCB  Key2_Scan_TCB;      //按键2接受到信息任务
 OS_TCB  Run_TCB;      //车子运行时的任务块
 OS_TCB  LED_Twinkle_TCB;   //LED闪烁时的任务快
 OS_TCB Position_TCB;        //判断位置及其方向的任务块
+OS_TCB  TaskTurn_TCB;       //任务顺序执行任务快
 
 
+//方位坐标
+static int8_t Pos_x ,Pos_y;
+static uint8_t doTask_Turn;
 
 
 
@@ -98,7 +102,8 @@ void User_main()
                  (void       *) 0,                              //任务拓展（0表示不拓展）
                  (OS_OPT      )(OS_OPT_TASK_STK_CHK | OS_OPT_TASK_STK_CLR),     //任务选项
                  (OS_ERR     *)&err);                           //返回错误类型 
-
+    
+    OSTaskCreate(&TaskTurn_TCB,"顺序执行任务",TaskTurn,0,TaskTurn_PRIO,&TaskTurn_STK[0],TaskTurn_STK_SIZE/10,TaskTurn_STK_SIZE,2,0,0,(OS_OPT_TASK_STK_CHK | OS_OPT_TASK_STK_CLR),&err);    
 
                  
 }
@@ -259,7 +264,6 @@ static void LED_Twinkle(void* p_arg)
 static void Position(void* p_arg)
 {
   	OS_ERR     err;
-     static int8_t Pos_x ,Pos_y;
      static uint8_t Flag_x,Flag_y;       //在棋盘的x、y点坐标    
 	char * pMsg;    
     (void) p_arg;
@@ -336,8 +340,48 @@ static void Position(void* p_arg)
              
     }
     
+}
+
+
+
+
+
+
+
+static void TaskTurn(void* p_arg)
+{
     
+   	OS_ERR     err; 
+    (void) p_arg;   
+    
+    while(1)
+    {
+      OSTaskSemPend(0,OS_OPT_PEND_BLOCKING,NULL,&err);  //等待任务信号
+        
+       
+        
+        
+        
+    }
     
     
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 

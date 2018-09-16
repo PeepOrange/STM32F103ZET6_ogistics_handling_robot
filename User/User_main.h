@@ -56,6 +56,13 @@ static void Position(void* p_arg);
 static CPU_STK   Position_STK[Position_STK_SIZE];  
 
 
+//任务顺序执行任务块
+extern OS_TCB  TaskTurn_TCB;    
+static void TaskTurn(void* p_arg);
+#define  TaskTurn_PRIO  2
+#define  TaskTurn_STK_SIZE 512
+static CPU_STK   TaskTurn_STK[TaskTurn_STK_SIZE];  
+
 
 
 //在启动任务中调用
