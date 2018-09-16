@@ -1,12 +1,29 @@
 #include "User_main.h"
 
 
+//方位枚举
+typedef enum 
+{
+    UP =0,
+    Back=1,
+    Left=2,
+    Right=3,    
+    Stop =4,
+}
+Diretion;
+
+Diretion  Car_Dir;
+
 //任务控制块
 OS_TCB  Key1_Scan_TCB;      //按键1的任务控制块
 OS_TCB  USART1_Get_TCB;     //串口1接受到信息任务
 OS_TCB  Key2_Scan_TCB;      //按键2接受到信息任务
 OS_TCB  Run_TCB;      //车子运行时的任务块
 OS_TCB  LED_Twinkle_TCB;   //LED闪烁时的任务快
+OS_TCB Position_TCB;        //判断位置及其方向的任务块
+
+
+
 
 
 
@@ -14,6 +31,9 @@ OS_TCB  LED_Twinkle_TCB;   //LED闪烁时的任务快
 //内存池
 OS_MEM   mem;
 uint8_t ucArray [ 70 ] [ 4 ];   //声明内存分区大小
+
+
+
 
 
 
@@ -179,20 +199,21 @@ static void  Key2_Scan(void *p_arg)
                      (OS_OPT    )OS_OPT_PEND_BLOCKING,  //如果信号量不可用就等待
                      (CPU_TS   *)0,                     //获取信号量被发布的时间戳
                      (OS_ERR   *)&err);                 //返回错误类型 
-
+        Car_Dir=UP;
         OSTaskCreate(&Run_TCB,"车子运行",Run,0,Run_PRIO,&Run_STK[0],Run_STK_SIZE/10,Run_STK_SIZE,2,0,0,(OS_OPT_TASK_STK_CHK | OS_OPT_TASK_STK_CLR),&err);    
-
-        OSTaskDel(&LED_Twinkle_TCB,&err);
-        LED_ALL_OFF();
-
-        
+        OSTaskCreate(&Position_TCB,"方向判断",Position,0,Position_PRIO,&Position_STK[0],Position_STK_SIZE/10,Position_STK_SIZE,2,0,0,(OS_OPT_TASK_STK_CHK | OS_OPT_TASK_STK_CLR),&err); 
+        Move_Up();        
        
+        OSTaskDel(&LED_Twinkle_TCB,&err);       //删除闪烁LED任务块
+        LED_ALL_OFF();
+               
         OSTaskSemPend ((OS_TICK   )0,                     //无期限等待
                      (OS_OPT    )OS_OPT_PEND_BLOCKING,  //如果信号量不可用就等待
                      (CPU_TS   *)0,                     //获取信号量被发布的时间戳
                      (OS_ERR   *)&err);                 //返回错误类型 
         
-       OSTaskDel(&Run_TCB,&err);
+       OSTaskDel(&Run_TCB,&err);                //删除奔跑任务
+       OSTaskDel(&Position_TCB,&err);           //删除判断方位任务
        Move_Stop();
     }
 }
@@ -200,18 +221,20 @@ static void  Key2_Scan(void *p_arg)
 
 static void Run(void* p_arg)
 {
-  	OS_ERR         err;
+  	OS_ERR     err;
     (void) p_arg;
     while(1)
     {
-       Move_Up();
-       OSTimeDly(2000,OS_OPT_TIME_DLY,&err);
-       Move_Back();
-       OSTimeDly(2000,OS_OPT_TIME_DLY,&err); 
-    }    
-    
-    
-    
+    OSTaskSemPend(0,OS_OPT_PEND_BLOCKING,NULL,&err);
+        switch(Car_Dir)
+        {
+            case UP : Move_Up(); break;
+            case Back : Move_Back(); break;
+            case Left:  Move_Left(); break;
+            case Right : Move_Right(); break;
+            case Stop :  Move_Stop(); break;
+        }    
+    }       
 }
 
 
@@ -233,5 +256,88 @@ static void LED_Twinkle(void* p_arg)
     
 }
 
+static void Position(void* p_arg)
+{
+  	OS_ERR     err;
+     static int8_t Pos_x ,Pos_y;
+     static uint8_t Flag_x,Flag_y;       //在棋盘的x、y点坐标    
+	char * pMsg;    
+    (void) p_arg;
+    
+    while(1)
+    {
+		pMsg = OSTaskQPend ((OS_TICK        )0,                    //无期限等待
+                          (OS_OPT         )OS_OPT_PEND_BLOCKING, //没有消息就阻塞任务
+                          (OS_MSG_SIZE   *)NULL,            //返回消息长度
+                          (CPU_TS        *)0,                    //返回消息被发布的时间戳
+                          (OS_ERR        *)&err);                //返回错误类型     
+        switch (*pMsg)
+        {
+            case 1:         //前传感器 
+            {
+                Flag_x++;
+                break;
+            }
+            case 2:         //后传感器
+            {
+                Flag_x++;               
+                break; 
+            }                
+            case 3:         //左传感器
+            {
+                Flag_y++;                              
+                break;
+            }
+            case 4:         //右传感器
+            {
+                Flag_y++;                              
+                break;
+            }
+            default :
+                break;
+        }
+        
+        if(Flag_y==2)
+        {
+        switch(Car_Dir)
+        {
+            case UP : Pos_y++; break;
+            case Back : Pos_y--; break;
+            case Left:  
+            case Right :
+            case Stop: break;
+        }    
+            
+            Flag_y=0;
+            Flag_x=0;
+        }
+        
+        
+        if(Flag_x==2)
+        {
+        switch(Car_Dir)
+        {
 
+            case Left:   Pos_x--; break;
+            case Right : Pos_x++; break;
+            case UP :  
+            case Back :  
+            case Stop: break;
+        }    
+            
+            Flag_y=0;
+            Flag_x=0;
+        }
+        
+             
+		OSMemPut (  (OS_MEM  *)&mem,                                 //指向内存管理对象
+                    (void    *)pMsg,                                 //内存块的首地址
+                    (OS_ERR  *)&err);		                          //返回错误类型	        
+             
+    }
+    
+    
+    
+    
+}
 

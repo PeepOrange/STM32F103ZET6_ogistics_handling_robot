@@ -30,7 +30,7 @@ static CPU_STK   USART1_Get_STK[Key1_Scan_STK_SIZE];
 extern  OS_TCB   Key2_Scan_TCB;
 static void    Key2_Scan(void *p_arg);
 #define  Key2_Scan_PRIO  2
-#define  Key2_Scan_STK_SIZE 64
+#define  Key2_Scan_STK_SIZE 128
 static CPU_STK   Key2_Scan_STK[Key2_Scan_STK_SIZE];  
 
 
@@ -38,7 +38,7 @@ static CPU_STK   Key2_Scan_STK[Key2_Scan_STK_SIZE];
 extern OS_TCB  Run_TCB;    
 static void Run(void* p_arg);
 #define  Run_PRIO  3
-#define  Run_STK_SIZE 1024
+#define  Run_STK_SIZE 64
 static CPU_STK   Run_STK[Run_STK_SIZE];  
 
 //LED闪烁的任务块
@@ -47,6 +47,13 @@ static void LED_Twinkle(void* p_arg);
 #define  LED_Twinkle_PRIO  3
 #define  LED_Twinkle_STK_SIZE 64
 static CPU_STK   LED_Twinkle_STK[LED_Twinkle_STK_SIZE];  
+
+//判断方位的任务块
+extern OS_TCB  Position_TCB;    
+static void Position(void* p_arg);
+#define  Position_PRIO  2
+#define  Position_STK_SIZE 128
+static CPU_STK   Position_STK[Position_STK_SIZE];  
 
 
 

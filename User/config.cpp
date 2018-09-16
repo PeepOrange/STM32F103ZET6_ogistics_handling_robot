@@ -347,6 +347,68 @@ void OLED_Init()
 }
 
 
+void Sensor_Init()
+{
+    GPIO FrontSensor(GPIOA,GPIO_Pin_1);
+    GPIO BackSensor(GPIOA,GPIO_Pin_2);
+    GPIO LeftSensor(GPIOA,GPIO_Pin_3);
+    GPIO RightSensor(GPIOA,GPIO_Pin_5);
+    
+    FrontSensor.mode(GPIO_Mode_IPU,GPIO_Speed_50MHz);
+    BackSensor.mode(GPIO_Mode_IPU,GPIO_Speed_50MHz);
+    LeftSensor.mode(GPIO_Mode_IPU,GPIO_Speed_50MHz);    
+    RightSensor.mode(GPIO_Mode_IPU,GPIO_Speed_50MHz);    
+
+    EXTI_InitTypeDef EXTI_InitStructure;
+    NVIC_InitTypeDef NVIC_InitStructure;
+    
+    //按键 FrontSensor A1 中断函数配置
+    NVIC_InitStructure.NVIC_IRQChannel = EXTI1_IRQn;
+    NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 0;
+    NVIC_InitStructure.NVIC_IRQChannelSubPriority = 1;
+    NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
+    NVIC_Init(&NVIC_InitStructure);   
+    
+    //按键 BackSensor A2 中断函数配置
+    NVIC_InitStructure.NVIC_IRQChannel = EXTI2_IRQn;    
+    NVIC_Init(&NVIC_InitStructure);          
+    
+    //按键 LeftSensor A3 中断函数配置
+    NVIC_InitStructure.NVIC_IRQChannel = EXTI3_IRQn;    
+    NVIC_Init(&NVIC_InitStructure);      
+
+    //按键 RightSensor A5 中断函数配置
+    NVIC_InitStructure.NVIC_IRQChannel = EXTI9_5_IRQn;    
+    NVIC_Init(&NVIC_InitStructure);      
+
+
+    //按键 FrontSensor A1 中断源配置
+    GPIO_EXTILineConfig(GPIO_PortSourceGPIOA, GPIO_PinSource1); 
+    EXTI_InitStructure.EXTI_Line = EXTI_Line1;
+    EXTI_InitStructure.EXTI_Mode = EXTI_Mode_Interrupt;
+//    EXTI_InitStructure.EXTI_Trigger = EXTI_Trigger_Rising;     //上升沿触发
+    EXTI_InitStructure.EXTI_Trigger = EXTI_Trigger_Falling;    //下降沿触发
+    EXTI_InitStructure.EXTI_LineCmd = ENABLE;
+    EXTI_Init(&EXTI_InitStructure);    
+    
+    //按键 BackSensor A2 中断源配置
+    GPIO_EXTILineConfig(GPIO_PortSourceGPIOA, GPIO_PinSource2); 
+    EXTI_InitStructure.EXTI_Line = EXTI_Line2;    
+    EXTI_Init(&EXTI_InitStructure);    
+
+    //按键 LeftSensor A3 中断源配置
+    GPIO_EXTILineConfig(GPIO_PortSourceGPIOA, GPIO_PinSource3); 
+    EXTI_InitStructure.EXTI_Line = EXTI_Line3;    
+    EXTI_Init(&EXTI_InitStructure);    
+    
+    //按键 RightSensor A5 中断源配置
+    GPIO_EXTILineConfig(GPIO_PortSourceGPIOA, GPIO_PinSource5); 
+    EXTI_InitStructure.EXTI_Line = EXTI_Line5;    
+    EXTI_Init(&EXTI_InitStructure);    
+    
+}
+
+
 
 
 

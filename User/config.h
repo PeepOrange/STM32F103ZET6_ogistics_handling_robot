@@ -36,6 +36,7 @@ void Move_Right(void);           //右平移
 void Move_Left(void);            //左平移
 void Move_Back(void);            //后退
 void Move_Up(void);              //前进
+    
 
 
 
@@ -59,8 +60,8 @@ void Uart_Init(void);
 void Key_Init(void);       
 void PWM_Init(void) ;
 extern void system_init(void) ;
-void OLED_Init(void);       //初始化OLED并且显示基本信息 
-    
+void OLED_Init(void);       //初始化OLED并且显示基本信息 ，横向 90 ，竖向 2.4.6分别显示任务顺序数字
+void Sensor_Init(void);     //初始化传感器    
 
 
 #ifdef __cplusplus
