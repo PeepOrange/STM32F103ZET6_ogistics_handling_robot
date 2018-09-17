@@ -12,7 +12,7 @@ typedef enum
 }
 Diretion;
 
-Diretion  Car_Dir;
+
 
 //任务控制块
 OS_TCB  Key1_Scan_TCB;      //按键1的任务控制块
@@ -26,8 +26,9 @@ OS_TCB  TaskTurn_TCB;       //任务顺序执行任务快
 
 //方位坐标
 static int8_t Pos_x ,Pos_y;
-static uint8_t doTask_Turn;
-
+static uint8_t doTask_Turn;     //任务顺序
+//当前车子行驶方向
+Diretion  Car_Dir;
 
 
 
@@ -220,6 +221,8 @@ static void  Key2_Scan(void *p_arg)
        OSTaskDel(&Run_TCB,&err);                //删除奔跑任务
        OSTaskDel(&Position_TCB,&err);           //删除判断方位任务
        Move_Stop();
+       Car_Dir=Stop;
+
     }
 }
 
@@ -358,13 +361,79 @@ static void TaskTurn(void* p_arg)
     {
       OSTaskSemPend(0,OS_OPT_PEND_BLOCKING,NULL,&err);  //等待任务信号
         
-       
-        
-        
-        
-    }
-    
-    
+        switch (doTask_Turn)
+        {
+            case 0 :    //任务1
+            {
+                if(Pos_y==1)
+                {
+                    Car_Dir=Right;
+                    doTask_Turn++;
+                    OSTaskSemPost(&Run_TCB,OS_OPT_POST_NONE,&err);      
+                    
+                }
+                else 
+                   OSTaskSemPost(&Key2_Scan_TCB,OS_OPT_POST_NONE,&err);     //如果和预期不符，给Key2发送任务信号量
+                break;
+            }
+            case 1 : //任务2
+            {
+
+                if(Pos_x==6)
+                    {
+                    //摄像头采取任务
+                    Car_Dir=Left;
+                    doTask_Turn++;
+                    OSTaskSemPost(&Run_TCB,OS_OPT_POST_NONE,&err);   
+                    }    
+                else if(Pos_x>6)
+                   OSTaskSemPost(&Key2_Scan_TCB,OS_OPT_POST_NONE,&err);     //如果和预期不符，给Key2发送任务信号量
+                break;                
+            }
+          
+            case 2 : //任务3
+            {
+                if(Pos_x>3)
+                    {
+                    //摄像头识别任务
+                    Car_Dir=Stop;
+                    doTask_Turn++;
+                    OSTaskSemPost(&Run_TCB,OS_OPT_POST_NONE,&err);   
+                    //机械臂抓取任务
+                    }    
+                else 
+                   OSTaskSemPost(&Key2_Scan_TCB,OS_OPT_POST_NONE,&err);     //如果和预期不符，给Key2发送任务信号量
+                break;                
+            }
+            
+            case 3 : //任务4
+            {
+                if(Pos_x==3)
+                    {
+                    Car_Dir=UP;
+                    doTask_Turn++;
+                    OSTaskSemPost(&Run_TCB,OS_OPT_POST_NONE,&err);   
+                    }    
+                else if(Pos_x<3||Pos_x>6)
+                   OSTaskSemPost(&Key2_Scan_TCB,OS_OPT_POST_NONE,&err);     //如果和预期不符，给Key2发送任务信号量
+                break;                
+            } 
+            
+            case 4 : //任务5
+            {
+                if(Pos_y==2)
+                    {
+                    Car_Dir=Right;      //右平移至任务放置区，思考是否增加任务
+                    doTask_Turn++;
+                    OSTaskSemPost(&Run_TCB,OS_OPT_POST_NONE,&err);   
+                    }    
+                else if(Pos_y>2)
+                   OSTaskSemPost(&Key2_Scan_TCB,OS_OPT_POST_NONE,&err);     //如果和预期不符，给Key2发送任务信号量
+                break;                
+            }                    
+            
+        }
+    }   
 }
 
 
