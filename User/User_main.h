@@ -7,7 +7,7 @@
 
 extern OS_MEM   mem;
 extern uint8_t ucArray [ 70 ] [ 4 ];   //声明内存分区大小
-
+#define Correct_Move_Time  500  //修正距离用的时间（即运动到半中心）单位：ms
 
 
 //检测Key1 任务设置
