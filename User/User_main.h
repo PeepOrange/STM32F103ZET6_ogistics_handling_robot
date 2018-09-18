@@ -48,20 +48,6 @@ static void LED_Twinkle(void* p_arg);
 #define  LED_Twinkle_STK_SIZE 64
 static CPU_STK   LED_Twinkle_STK[LED_Twinkle_STK_SIZE];  
 
-//判断方位的任务块
-extern OS_TCB  Position_TCB;    
-static void Position(void* p_arg);
-#define  Position_PRIO  2
-#define  Position_STK_SIZE 128
-static CPU_STK   Position_STK[Position_STK_SIZE];  
-
-
-//任务顺序执行任务块
-extern OS_TCB  TaskTurn_TCB;    
-static void TaskTurn(void* p_arg);
-#define  TaskTurn_PRIO  2
-#define  TaskTurn_STK_SIZE 512
-static CPU_STK   TaskTurn_STK[TaskTurn_STK_SIZE];  
 
 
 
