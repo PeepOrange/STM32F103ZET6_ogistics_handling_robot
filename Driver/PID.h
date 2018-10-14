@@ -1,11 +1,6 @@
 #ifndef __PID_H_
 #define __PID_H_
 
-/*****PID参数设置******/
-#define Proportion		0.1			//比例常数(Kp)
-#define Integral			0.001		//积分常数(Ki)	Ki=(Kp*T)/Ti
-#define Derivative		0.001		//微分常数(Kd)	Kd=(Kp*Td)/T
-/*********************/
 
 
 /******参数调节说明
@@ -21,7 +16,17 @@
 4.系统空载、带载联调，再对PID参数进行微调，直至满足要求
 ******************/
 
-
+typedef struct 
+{
+	float goal_point;       //目标值
+    float read_point;       //真实值
+	float last_Error;       //上一次误差
+	float pre_Error;        //上上次误差
+	
+	float  Kp;				//控制器的比例放大系数
+	float  Ki;				//控制器的积分系数		Ki=(Kp*T)/Ti 	Ti为控制器的积分时间
+	float  Kd;				//控制器的微分系数		Kd=(Kp*Td)/T 	Td为控制器的微分时间
+}PID;
 
 
 
@@ -32,7 +37,7 @@
 函数返回：应当调节的实际值
 *******************/
 
-float PID_Out(float goal_point,float read_point);	 
+float	PID_Out(PID *pid);	 
 
 
 

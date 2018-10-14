@@ -169,12 +169,14 @@ void  BSP_Init (void)
  Uart_Init(); 
     
  Key_Init();
-    
- Sensor_Init();   
+        
+ Encoder_Inti();   
     
  PWM_Init();  
  
- OLED_Init();      
+ OLED_Init();
+ 
+ TIM6_Inti();
 }
 
 

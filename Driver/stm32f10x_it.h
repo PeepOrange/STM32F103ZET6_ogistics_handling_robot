@@ -144,7 +144,7 @@ void RTCAlarm_IRQHandler()  ; //联到EXTI的RTC闹钟中断
 
 void USBWakeUp_IRQHandler() ;  //联到EXTI的从USB待机唤醒中断 
 
-
+void TIM6_IRQHandler();        //定时器6中断
 }
 #endif
 

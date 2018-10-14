@@ -10,7 +10,7 @@ IIC_CS::IIC_CS(GPIO *sclPin,GPIO *sdaPin)
 
 void    IIC_CS::Init_Gpio()
 {
-    this->sclPin->mode(GPIO_Mode_Out_OD,GPIO_Speed_50MHz);
+    this->sclPin->mode(GPIO_Mode_Out_PP,GPIO_Speed_50MHz);
     this->sdaPin->mode(GPIO_Mode_Out_OD,GPIO_Speed_50MHz);   
 }
 
@@ -57,19 +57,18 @@ void IIC_CS::NoAck()
 
 FunctionalState IIC_CS::WaitAck()
 {
-	this->sclPin->reset();
+    this->sclPin->reset();
     this->sdaPin->set();
     this->sclPin->set();
     if(this->sdaPin->out_read())
     {
         this->sclPin->reset();
-        return DISABLE;       
+        return ENABLE;               
     }
-    else
-    {
-        this->sclPin->reset();
-        return ENABLE;  
-    }
+
+    this->sclPin->reset();
+    return DISABLE;  
+    
 }
 
 void IIC_CS::Write_Byte(unsigned char IIC_Byte)
@@ -98,7 +97,6 @@ uint8_t IIC_CS::Read_Byte()
 	{
 		
 		if(sdaPin->out_read())
-		//IIC_Byte|=(1<<i);
 		IIC_Byte|=(0x80>>i);
 		this->sclPin->set();
 		this->sclPin->reset();

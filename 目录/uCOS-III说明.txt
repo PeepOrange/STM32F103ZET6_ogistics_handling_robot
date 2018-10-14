@@ -1,13 +1,7 @@
-
-个人封装文件说明
-
-User_main()可以变相看做是 main()函数
-真正的main()在app.c中
-config作为cpp与c的封装文件
-
 IO口布置
 
-调试按键：A0（开发板已有）
+//开发板自带部分IO口//
+调试按键：A0（开发板已有）(用作编码器A相)
 开关按键：E4（开发板已有）
 
 UART1(注意反接，即TX接RX,RX接TX)
@@ -17,18 +11,22 @@ RX: A10
 LED1 E5 （开发板已有）
 LED2:E6 （开发板已有）
 
-        左前轮      右前轮      左后轮       右后轮
-正转IO  A6          A7          B0          B1
-反转IO  B6          B7          B8          B9
+//电机部分
+轮子       编码器A相通道  编码器B相通道  电机正向通道  电机负向通道  编码器A相IO  编码器B相IO   电机正向IO  电机负向IO
+左前轮     TIM2_CH1      TIM2_CH2       TIM1_CH1     TIM8_CH1     A15          B3           E9         C6
+左后轮     TIM3_CH1      TIM3_CH2       TIM1_CH2     TIM8_CH2     A6           A7           E11        C7
+右前轮     TIM4_CH1      TIM4_CH2       TIM1_CH3     TIM8_CH3     B6           B7           E13        C8
+右后轮     TIM5_CH1      TIM5_CH2       TIM1_CH4     TIM8_CH4     A0           A1           E14        C9
 
+
+//注意部分
+定时器2完全重映射  A15 B3  B10  B11
+定时器1完全重映射  E9  E11 E13  E14
 
 OLED（可接多个以IIC协议通信的设备）
 SDA  D0    SCL D2
 
-前传感器 A1
-后传感器 A2
-左传感器 A3
-右传感器 A5
+
 
 
 

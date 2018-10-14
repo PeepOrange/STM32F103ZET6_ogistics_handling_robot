@@ -1,10 +1,13 @@
 #include "system.h"
 void system_init()  //系统初始化
 {
-	NVIC_PriorityGroupConfig(NVIC_PriorityGroup_2); 	//设置NVIC中断分组2:2位抢占优先级，2位响应优先
+  NVIC_PriorityGroupConfig(NVIC_PriorityGroup_2); 	//设置NVIC中断分组2:2位抢占优先级，2位响应优先
   RCC_APB2PeriphClockCmd(RCC_APB2Periph_AFIO, ENABLE);	//顺序，要先打开复用时钟，再关闭JTAGE
-  GPIO_PinRemapConfig(GPIO_Remap_SWJ_JTAGDisable,ENABLE);	//关闭jtag,保留swd
-	RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOA|RCC_APB2Periph_GPIOB|RCC_APB2Periph_GPIOC|RCC_APB2Periph_GPIOD|RCC_APB2Periph_GPIOE|RCC_APB2Periph_GPIOF|RCC_APB2Periph_GPIOG|RCC_APB2Periph_AFIO,ENABLE);	 //使能端口时钟
+//GPIO_PinRemapConfig(GPIO_Remap_SWJ_JTAGDisable,ENABLE);	//禁止JTAG功能，把PB3，PB4作为普通IO口使用  
+  GPIO_PinRemapConfig(GPIO_FullRemap_TIM2, ENABLE);    //定时器2完全重映射  A15 B3  B10  B11
+  GPIO_PinRemapConfig(GPIO_Remap_SWJ_JTAGDisable,ENABLE);	//禁止JTAG功能，把PB3，PB4作为普通IO口使用
+  GPIO_PinRemapConfig(GPIO_FullRemap_TIM1, ENABLE);    //定时器1完全重映射  E9  E11 E13  E14
+  RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOA|RCC_APB2Periph_GPIOB|RCC_APB2Periph_GPIOC|RCC_APB2Periph_GPIOD|RCC_APB2Periph_GPIOE|RCC_APB2Periph_GPIOF|RCC_APB2Periph_GPIOG|RCC_APB2Periph_AFIO,ENABLE);	 //使能端口时钟
 }   
 
 void SysRestart(void) //系统重启

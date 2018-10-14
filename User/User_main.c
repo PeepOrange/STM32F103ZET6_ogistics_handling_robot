@@ -17,13 +17,12 @@ Diretion;
 //任务控制块
 OS_TCB  Key1_Scan_TCB;      //按键1的任务控制块
 OS_TCB  USART1_Get_TCB;     //串口1接受到信息任务
-OS_TCB  Key2_Scan_TCB;      //按键2接受到信息任务
-OS_TCB  Run_TCB;      //车子运行时的任务块
-OS_TCB  LED_Twinkle_TCB;   //LED闪烁时的任务快
 
 
 
-static int8_t Pos_x ,Pos_y;     //方位坐标
+
+
+
 
 //当前车子行驶方向
 Diretion  Car_Dir;
@@ -86,73 +85,11 @@ void User_main()
                  (void       *) 0,                              //任务拓展（0表示不拓展）
                  (OS_OPT      )(OS_OPT_TASK_STK_CHK | OS_OPT_TASK_STK_CLR),     //任务选项
                  (OS_ERR     *)&err);                           //返回错误类型 
- 
-                 
-    OSTaskCreate((OS_TCB     *)&Key2_Scan_TCB,                /* 任务控制块地址                               */
-                 (CPU_CHAR   *)"按键2检测",                //任务名字
-                 (OS_TASK_PTR ) Key2_Scan,                   //任务函数
-                 (void       *) 0,                              //传递给任务函数的实参（形参p_arg）
-                 (OS_PRIO     ) Key2_Scan_PRIO,            //任务的优先级
-                 (CPU_STK    *)&Key2_Scan_STK[0],             //任务堆栈的基地址
-                 (CPU_STK_SIZE) Key2_Scan_STK_SIZE / 10,   //任务堆栈空间剩下1/10时限制其增长
-                 (CPU_STK_SIZE) Key2_Scan_STK_SIZE,        //任务的堆栈空间（单位：size(CPU_STK)）
-                 (OS_MSG_QTY  ) 2u,                             //任务可接受的最大消息数
-                 (OS_TICK     ) 0u,                             //任务的时间片节拍数（默认值0表示 OS_CFG_TICK_RATE_HZ/10  即10ms ）
-                 (void       *) 0,                              //任务拓展（0表示不拓展）
-                 (OS_OPT      )(OS_OPT_TASK_STK_CHK | OS_OPT_TASK_STK_CLR),     //任务选项
-                 (OS_ERR     *)&err);                           //返回错误类型 
-    
-
-                 
+                  
 }
 
 
 
-static void  Key1_Scan(void *p_arg)
-{
-	OS_ERR         err;
-	CPU_INT16U     version;
-	CPU_INT32U     cpu_clk_freq;
-	CPU_SR_ALLOC();
-
-	
-	(void)p_arg;
-
-	version = OSVersion(&err);                          //获取uC/OS版本号
-	
-  cpu_clk_freq = BSP_CPU_ClkFreq();                   //获取CPU时钟，时间戳是以该时钟计数
-
-	
-	while (DEF_TRUE) 
-        {                                 
-		/* 阻塞任务，直到KEY1被单击 */
-		OSTaskSemPend ((OS_TICK   )0,                     //无期限等待
-                     (OS_OPT    )OS_OPT_PEND_BLOCKING,  //如果信号量不可用就等待
-                     (CPU_TS   *)0,                     //获取信号量被发布的时间戳
-                     (OS_ERR   *)&err);                 //返回错误类型
-		
-
-		OS_CRITICAL_ENTER();                              //进入临界段，避免串口打印被打断
-
-        printf ( "\r\nuC/OS版本号：V%d.%02d.%02d\r\n",
-             version / 10000, version % 10000 / 100, version % 100 );
-
-        printf ( "CPU主频：%d MHz\r\n", cpu_clk_freq / 1000000 );  
-
-
-        printf ( "CPU使用率：%d.%d%%\r\n",
-             OSStatTaskCPUUsage / 100, OSStatTaskCPUUsage % 100 );  
-
-        printf ( "CPU最大使用率：%d.%d%%\r\n", 
-                 OSStatTaskCPUUsageMax / 100, OSStatTaskCPUUsageMax % 100 );
-
-
-		
-		OS_CRITICAL_EXIT();                              
-		
-	}
-      
-}
 
 
 
@@ -190,99 +127,46 @@ static void    USART1_Get(void *p_arg)
 }
 
 
-static void  Key2_Scan(void *p_arg)
+
+
+
+
+static void    Key1_Scan(void *p_arg)
 {
-    
- 	OS_ERR         err;
-    (void) p_arg;
+    OS_ERR      err;
+ 	CPU_SR_ALLOC();   
     while(1)
     {
-		OSTaskCreate(&LED_Twinkle_TCB,"LED闪烁",LED_Twinkle,0,LED_Twinkle_PRIO,&LED_Twinkle_STK[0],LED_Twinkle_STK_SIZE/10,LED_Twinkle_STK_SIZE,2,0,0,(OS_OPT_TASK_STK_CHK | OS_OPT_TASK_STK_CLR),&err);    
-        OSTaskSemPend ((OS_TICK   )0,                     //无期限等待
-                     (OS_OPT    )OS_OPT_PEND_BLOCKING,  //如果信号量不可用就等待
-                     (CPU_TS   *)0,                     //获取信号量被发布的时间戳
-                     (OS_ERR   *)&err);                 //返回错误类型 
-        Car_Dir=UP;
-        OSTaskCreate(&Run_TCB,"车子运行",Run,0,Run_PRIO,&Run_STK[0],Run_STK_SIZE/10,Run_STK_SIZE,2,0,0,(OS_OPT_TASK_STK_CHK | OS_OPT_TASK_STK_CLR),&err);    
-        Move_Up();        
-        OSTaskDel(&LED_Twinkle_TCB,&err);       //删除闪烁LED任务块
-        LED_ALL_OFF();
-               
-        OSTaskSemPend ((OS_TICK   )0,                     //无期限等待
-                     (OS_OPT    )OS_OPT_PEND_BLOCKING,  //如果信号量不可用就等待
-                     (CPU_TS   *)0,                     //获取信号量被发布的时间戳
-                     (OS_ERR   *)&err);                 //返回错误类型 
+      OSTaskSemPend (0,OS_OPT_PEND_BLOCKING,NULL,&err);
+      OS_CRITICAL_ENTER();                             
         
-        Move_Back();
-       Car_Dir=Back;      
+      printf ( "CPU使用率：%d.%d%%\r\n",
+             OSStatTaskCPUUsage / 100, OSStatTaskCPUUsage % 100 );  
+
+      printf ( "CPU最大使用率：%d.%d%%\r\n", 
+                 OSStatTaskCPUUsageMax / 100, OSStatTaskCPUUsageMax % 100 );        
+      
+     printf ("\n\r左前轮的Kp:%.2f  Ki:%.2f  Kd:%.2f\r\n",LeftUp_PID_Mortor.Kp,LeftUp_PID_Mortor.Ki,LeftUp_PID_Mortor.Kd); 
+     printf ("左前轮的目标值:%.2f   读取值:%.2f \r\n",LeftUp_PID_Mortor.goal_point,LeftUp_PID_Mortor.read_point);    
+     printf ("左前轮的上次误差:%.2f \r\n",LeftUp_PID_Mortor.last_Error);    
+
+     printf ("\n\r左后轮的Kp:%.2f  Ki:%.2f  Kd:%.2f\r\n",LeftBack_PID_Mortor.Kp,LeftBack_PID_Mortor.Ki,LeftBack_PID_Mortor.Kd); 
+     printf ("左后轮的目标值:%.2f   读取值:%.2f \r\n",LeftBack_PID_Mortor.goal_point,LeftBack_PID_Mortor.read_point); 
+     printf ("左后轮的上次误差:%.2f \r\n",LeftBack_PID_Mortor.last_Error);   
         
-        OSTaskSemPend ((OS_TICK   )0,                     //无期限等待
-                     (OS_OPT    )OS_OPT_PEND_BLOCKING,  //如果信号量不可用就等待
-                     (CPU_TS   *)0,                     //获取信号量被发布的时间戳
-                     (OS_ERR   *)&err);                 //返回错误类型 
+     printf ("\n\r右前轮的Kp:%.2f  Ki:%.2f  Kd:%.2f\r\n",RightUp_PID_Mortor.Kp,RightUp_PID_Mortor.Ki,RightUp_PID_Mortor.Kd); 
+     printf ("右前轮的目标值:%.2f   读取值:%.2f \r\n",RightUp_PID_Mortor.goal_point,RightUp_PID_Mortor.read_point);       
+     printf ("右前轮的上次误差:%.2f \r\n",RightUp_PID_Mortor.last_Error);  
         
-        Move_Left();
-       Car_Dir=Left;     
-
-        OSTaskSemPend ((OS_TICK   )0,                     //无期限等待
-                     (OS_OPT    )OS_OPT_PEND_BLOCKING,  //如果信号量不可用就等待
-                     (CPU_TS   *)0,                     //获取信号量被发布的时间戳
-                     (OS_ERR   *)&err);                 //返回错误类型 
-        
-        Move_Right();
-       Car_Dir=Right;     
-         OSTaskSemPend ((OS_TICK   )0,                     //无期限等待
-                     (OS_OPT    )OS_OPT_PEND_BLOCKING,  //如果信号量不可用就等待
-                     (CPU_TS   *)0,                     //获取信号量被发布的时间戳
-                     (OS_ERR   *)&err);                 //返回错误类型        
-       OSTaskDel(&Run_TCB,&err);                //删除奔跑任务
-       Move_Stop();
-       Car_Dir=Stop;
-
-    }
-}
+     printf ("\n\r右后轮的Kp:%.2f  Ki:%.2f  Kd:%.2f\r\n",RightBack_PID_Mortor.Kp,RightBack_PID_Mortor.Ki,RightBack_PID_Mortor.Kd); 
+     printf ("右后轮的目标值:%.2f   读取值:%.2f \r\n",RightBack_PID_Mortor.goal_point,RightBack_PID_Mortor.read_point); 
+     printf ("右后轮的上次误差:%.2f \r\n",RightBack_PID_Mortor.last_Error);  
 
 
-static void Run(void* p_arg)
-{
-  	OS_ERR     err;
-    (void) p_arg;
-    while(1)
-    {
-    OSTaskSemPend(0,OS_OPT_PEND_BLOCKING,NULL,&err);
-        switch(Car_Dir)
-        {
-            case UP : Move_Up(); break;
-            case Back : Move_Back(); break;
-            case Left:  Move_Left(); break;
-            case Right : Move_Right(); break;
-            case Stop :  Move_Stop(); break;
-        }    
-    }       
-}
-
-
-static void LED_Twinkle(void* p_arg)
-{
-  	OS_ERR         err;
-    (void) p_arg;
-
-    while(1)
-    {
-        LED1_Toggle();
-        OSTimeDly(250,OS_OPT_TIME_DLY,&err);
-        LED1_Toggle();
-        LED2_Toggle();
-        OSTimeDly(250,OS_OPT_TIME_DLY,&err);        
-        LED2_Toggle();       
+      OS_CRITICAL_EXIT();   
     }
     
-    
 }
-
-
-
-
 
 
 
