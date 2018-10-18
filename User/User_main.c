@@ -23,7 +23,6 @@ OS_TCB  USART1_Get_TCB;     //串口1接受到信息任务
 
 
 
-
 //当前车子行驶方向
 Diretion  Car_Dir;
 
@@ -85,7 +84,9 @@ void User_main()
                  (void       *) 0,                              //任务拓展（0表示不拓展）
                  (OS_OPT      )(OS_OPT_TASK_STK_CHK | OS_OPT_TASK_STK_CLR),     //任务选项
                  (OS_ERR     *)&err);                           //返回错误类型 
-                  
+  
+
+                 
 }
 
 
@@ -164,9 +165,13 @@ static void    Key1_Scan(void *p_arg)
 
 
       OS_CRITICAL_EXIT();   
+
     }
     
 }
+
+
+
 
 
 

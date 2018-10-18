@@ -9,23 +9,20 @@
 #include "User_main.h"
 
     
-uint16_t LeftUp_PWM = 200;                              //默认的左前轮的PWM,[-1000,1000]
-uint16_t LeftBack_PWM = 200;                            //默认的左后轮的PWM,[-1000,1000]
-uint16_t RightUp_PWM = 200;                             //默认的右前轮的PWM,[-1000,1000]
-uint16_t RightBack_PWM = 200;                           //默认的右后轮的PWM,[-1000,1000]
+int16_t LeftUp_PWM = Goal_LeftUp_PWM;                              //默认的左前轮的PWM,[-1000,1000]
+int16_t LeftBack_PWM = Goal_LeftBack_PWM;                            //默认的左后轮的PWM,[-1000,1000]
+int16_t RightUp_PWM = Goal_RightUp_PWM;                             //默认的右前轮的PWM,[-1000,1000]
+int16_t RightBack_PWM = Goal_RightBack_PWM;                           //默认的右后轮的PWM,[-1000,1000]
     
 void TIM6_IRQHandler()
 {
     OSIntEnter();       //进入中断
-    
     if(TIM_GetITStatus(TIM6,TIM_IT_Update)!=RESET)
     {
         PID_PWM_Adujust(LeftUp_PWM,LeftBack_PWM,RightUp_PWM,RightBack_PWM);
     }
     TIM_ClearITPendingBit(TIM6,TIM_FLAG_Update);
     OSIntExit();       //退出中断  
-
-
 }    
     
 

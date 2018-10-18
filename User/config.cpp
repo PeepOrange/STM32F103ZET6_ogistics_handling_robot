@@ -149,7 +149,7 @@ void OutPWM_Motor_Init()
 	tim_base.TIM_CounterMode=TIM_CounterMode_Up;    //向上记数
 	tim_base.TIM_ClockDivision=TIM_CKD_DIV1;   //时钟不分频
 	
-	RCC_APB1PeriphClockCmd(RCC_APB2Periph_TIM1|RCC_APB2Periph_TIM8, ENABLE);
+	RCC_APB2PeriphClockCmd(RCC_APB2Periph_TIM1|RCC_APB2Periph_TIM8, ENABLE);
 	TIM_TimeBaseInit(TIM1,&tim_base );
     TIM_TimeBaseInit(TIM8,&tim_base );
 	TIM_ClearFlag(TIM1, TIM_FLAG_Update);
@@ -171,12 +171,22 @@ void OutPWM_Motor_Init()
     TIM_OC2Init(TIM8,&tim_oc_mode);        
     TIM_OC3Init(TIM8,&tim_oc_mode);        
     TIM_OC4Init(TIM8,&tim_oc_mode);   
+    
+    TIM_OC1PreloadConfig(TIM1, TIM_OCPreload_Enable); 
+    TIM_OC2PreloadConfig(TIM1, TIM_OCPreload_Enable); 
+    TIM_OC3PreloadConfig(TIM1, TIM_OCPreload_Enable); 
+    TIM_OC4PreloadConfig(TIM1, TIM_OCPreload_Enable); 
+    
+    TIM_OC1PreloadConfig(TIM8, TIM_OCPreload_Enable); 
+    TIM_OC2PreloadConfig(TIM8, TIM_OCPreload_Enable); 
+    TIM_OC3PreloadConfig(TIM8, TIM_OCPreload_Enable); 
+    TIM_OC4PreloadConfig(TIM8, TIM_OCPreload_Enable); 
  
     TIM_CtrlPWMOutputs(TIM1,ENABLE);
     TIM_CtrlPWMOutputs(TIM8,ENABLE);        //高级定时器PWM输出设置
  
     TIM_Cmd(TIM1,ENABLE);       //开启定时器1  
-    TIM_Cmd(TIM8,ENABLE);       //开启定时器1  
+    TIM_Cmd(TIM8,ENABLE);       //开启定时器8  
     
 }
 
@@ -188,9 +198,9 @@ void GPIO_TIM1_Init()
     E11.mode(GPIO_Mode_AF_PP,GPIO_Speed_50MHz);
     GPIO E9(GPIOE,GPIO_Pin_9);
     E9.mode(GPIO_Mode_AF_PP,GPIO_Speed_50MHz);
-    GPIO E13(GPIOE,GPIO_Pin_11);
+    GPIO E13(GPIOE,GPIO_Pin_13);
     E13.mode(GPIO_Mode_AF_PP,GPIO_Speed_50MHz);
-    GPIO E14(GPIOE,GPIO_Pin_11);
+    GPIO E14(GPIOE,GPIO_Pin_14);
     E14.mode(GPIO_Mode_AF_PP,GPIO_Speed_50MHz);    
 }
 
@@ -234,6 +244,8 @@ void OLED_Init()
     oled.Printf(50,3,"Red  : ?");
     oled.Printf(50,5,"Blue : ?");
     oled.Printf(50,7,"Green: ?");
+    
+
     oled.ShowChinese(30,0,0);
     oled.ShowChinese(50,0,1);
     oled.ShowChinese(70,0,2);
@@ -243,6 +255,26 @@ void OLED_Init()
     
     delete oled_def.SCL;
     delete oled_def.SDA;
+}
+
+
+
+
+void Oled_PID(float UpLeft,float UpRight,float BackLeft,float BackRight)
+{
+    OLED_GPIO  oled_def;
+    oled_def.ID_Adress=0x3c;//OLED的从机地址
+    oled_def.SCL=new GPIO(GPIOD,GPIO_Pin_2);
+    oled_def.SDA=new GPIO(GPIOD,GPIO_Pin_0);
+    OLED oled(&oled_def);	
+
+      oled.Printf(90,3,"%.2f",UpLeft);
+      oled.Printf(90,4,"%.2f",UpRight);      
+      oled.Printf(90,5,"%.2f",BackLeft);
+      oled.Printf(90,6,"%.2f",BackRight);   
+    delete oled_def.SCL;
+    delete oled_def.SDA;    
+    
 }
 
 
@@ -411,6 +443,20 @@ void BackRight_PWM_Set(int16_t PWM)
 
 
 
+int16_t abs( int16_t x)
+{
+    return  (x>0?x:-x) ;
+    
+}
+
+int16_t jud( int16_t x)
+{
+    return  (x>0?1:-1) ;
+    
+}
+
+
+
 
 
 void PID_PWM_Adujust(int16_t PWM1,int16_t PWM2,int16_t PWM3,int16_t PWM4)       //左前  左后   右前  右后
@@ -418,16 +464,16 @@ void PID_PWM_Adujust(int16_t PWM1,int16_t PWM2,int16_t PWM3,int16_t PWM4)       
     int16_t Set_PWM;
    
     LeftUp_PID_Mortor.goal_point=abs(PWM1)*K_PWM_Encoder;
-    LeftUp_PID_Mortor.read_point=Encoder_read(2);
+    LeftUp_PID_Mortor.read_point=jud(PWM1)*Encoder_read(2);
     Set_PWM=PID_Out(&LeftUp_PID_Mortor)/K_PWM_Encoder;    
     if(Set_PWM>1000)
         Set_PWM=1000;
     else if(Set_PWM<0)
         Set_PWM=0;
-    UpLeft_PWM_Set(Set_PWM*jud(PWM1)); 
+    UpLeft_PWM_Set(Set_PWM * jud(PWM1)); 
     
     LeftBack_PID_Mortor.goal_point=abs(PWM2)*K_PWM_Encoder;
-    LeftBack_PID_Mortor.read_point=Encoder_read(3);
+    LeftBack_PID_Mortor.read_point=jud(PWM2)*Encoder_read(3);
     Set_PWM=PID_Out(&LeftBack_PID_Mortor)/K_PWM_Encoder;    
     if(Set_PWM>1000)
         Set_PWM=1000;
@@ -437,7 +483,7 @@ void PID_PWM_Adujust(int16_t PWM1,int16_t PWM2,int16_t PWM3,int16_t PWM4)       
 
 
     RightUp_PID_Mortor.goal_point=abs(PWM3)*K_PWM_Encoder;
-    RightUp_PID_Mortor.read_point=Encoder_read(4);
+    RightUp_PID_Mortor.read_point=jud(PWM3)*Encoder_read(4);
     Set_PWM=PID_Out(&RightUp_PID_Mortor)/K_PWM_Encoder;    
     if(Set_PWM>1000)
         Set_PWM=1000;
@@ -447,7 +493,7 @@ void PID_PWM_Adujust(int16_t PWM1,int16_t PWM2,int16_t PWM3,int16_t PWM4)       
 
 
     RightBack_PID_Mortor.goal_point=abs(PWM4)*K_PWM_Encoder;
-    RightBack_PID_Mortor.read_point=Encoder_read(5);
+    RightBack_PID_Mortor.read_point=jud(PWM4)*Encoder_read(5);
     Set_PWM=PID_Out(&RightBack_PID_Mortor)/K_PWM_Encoder;    
     if(Set_PWM>1000)
         Set_PWM=1000;
@@ -464,10 +510,10 @@ void TIM6_Inti()					//开启定时器6，每次记数1us，记5000次数更新，即5ms，更新时产
 	TIM_TimeBaseInitTypeDef	TIM6_DriverStruct;
 	NVIC_InitTypeDef	    TIM6_ITStruct;
 	
-	RCC_APB2PeriphClockCmd(RCC_APB1Periph_TIM6, ENABLE);
+	RCC_APB1PeriphClockCmd(RCC_APB1Periph_TIM6, ENABLE);
 	TIM6_DriverStruct.TIM_Prescaler=35;						//APB1时钟线是36MHZ,故为35
 	TIM6_DriverStruct.TIM_CounterMode=TIM_CounterMode_Up;
-	TIM6_DriverStruct.TIM_Period=5000;
+	TIM6_DriverStruct.TIM_Period=Reset_Time;
 	TIM6_DriverStruct.TIM_ClockDivision=TIM_CKD_DIV1;
 	
 	TIM6_ITStruct.NVIC_IRQChannel=TIM6_IRQn;
@@ -482,6 +528,7 @@ void TIM6_Inti()					//开启定时器6，每次记数1us，记5000次数更新，即5ms，更新时产
 	TIM_ClearFlag(TIM6, TIM_FLAG_Update);
 	TIM_Cmd(TIM6,ENABLE);	
 }
+
 
 
 
