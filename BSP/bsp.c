@@ -171,6 +171,8 @@ void  BSP_Init (void)
  Key_Init();
         
  Encoder_Inti();   
+ 
+ Senor_Init();
     
  PWM_Init();  
  

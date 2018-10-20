@@ -5,14 +5,16 @@
 
 
 /*****PID参数设置******/
-#define K_PWM_Encoder                   0.02           //脉冲效率比    Encoder/PWM = K_PWM_Encoder (Reset_Time时)
-#define Encoder_read_num_Proportion		20.0			//比例常数(Kp)
-#define Encoder_read_num_Integral		10.0			//积分常数(Ki)	Ki=(Kp*T)/Ti
-#define Encoder_read_num_Derivative		0.1			    //微分常数(Kd)	Kd=(Kp*Td)/T
-#define Goal_LeftUp_PWM                 200             //左前轮目标PWM(-1000,1000)
-#define Goal_LeftBack_PWM               200             //左后轮目标PWM(-1000,1000)
-#define Goal_RightUp_PWM                200             //右前轮目标PWM(-1000,1000)
-#define Goal_RightBack_PWM              200             //右后轮目标PWM(-1000,1000)
+#define K_PWM_Encoder                   0.01            //脉冲效率比    Encoder/PWM = K_PWM_Encoder (Reset_Time时)
+#define Encoder_read_num_Proportion	    25		        //比例常数(Kp)
+#define Encoder_read_num_Integral		15	            //积分常数(Ki)	Ki=(Kp*T)/Ti
+#define Encoder_read_num_Derivative		1		        //微分常数(Kd)	Kd=(Kp*Td)/T
+#define Goal_LeftUp_PWM                 350             //左前轮目标PWM(-1000,1000)
+#define Goal_LeftBack_PWM               350             //左后轮目标PWM(-1000,1000)
+#define Goal_RightUp_PWM                350             //右前轮目标PWM(-1000,1000)
+#define Goal_RightBack_PWM              350             //右后轮目标PWM(-1000,1000)
+#define Correct_Back_PWM                -200            //调整转向的负向一侧的PWM
+#define Correct_Up_PWM                  200             //调整转向的正向一侧的PWM
 #define Reset_Time                      10000           //刷新PID调节时间，单位us [0,65535]
 /*****PID参数调节*****/
 
@@ -56,7 +58,7 @@ void LED2_Toggle(void);     //LED2翻转
 void LED_ALL_OFF(void);     //所有LED关闭    
 void PID_PWM_Adujust(int16_t PWM1,int16_t PWM2,int16_t PWM3,int16_t PWM4);       //左前  左后   右前  右后      PID调节PWM
 void Oled_PID(float UpLeft,float UpRight,float BackLeft,float BackRight);
-    
+void Senor_Init(void);    
     
 
 //BSP初始化函数

@@ -17,7 +17,7 @@ Diretion;
 //任务控制块
 OS_TCB  Key1_Scan_TCB;      //按键1的任务控制块
 OS_TCB  USART1_Get_TCB;     //串口1接受到信息任务
-
+OS_TCB  Run_TCB;            //循迹+PID模块
 
 
 
@@ -31,7 +31,7 @@ Diretion  Car_Dir;
 
 //内存池
 OS_MEM   mem;
-uint8_t ucArray [ 70 ] [ 4 ];   //声明内存分区大小
+uint8_t ucArray [ 4 ] [ 4 ];   //声明内存分区大小
 
 
 
@@ -50,7 +50,7 @@ void User_main()
     OSMemCreate ((OS_MEM      *)&mem,             //指向内存管理对象
                  (CPU_CHAR    *)"Mem",   //命名内存管理对象
                  (void        *)ucArray,          //内存分区的首地址
-                 (OS_MEM_QTY   )70,               //内存分区中内存块数目
+                 (OS_MEM_QTY   )4,               //内存分区中内存块数目
                  (OS_MEM_SIZE  )4,                //内存块的字节数目
                  (OS_ERR      *)&err);            //返回错误类型    
     
@@ -85,7 +85,7 @@ void User_main()
                  (OS_OPT      )(OS_OPT_TASK_STK_CHK | OS_OPT_TASK_STK_CLR),     //任务选项
                  (OS_ERR     *)&err);                           //返回错误类型 
   
-
+    OSTaskCreate(&Run_TCB,"寻线",Run,0,Run_PRIO,Run_STK,Run_STK_SIZE/10,Run_STK_SIZE,2,0,0,(OS_OPT_TASK_STK_CHK | OS_OPT_TASK_STK_CLR),&err);  
                  
 }
 
@@ -173,7 +173,41 @@ static void    Key1_Scan(void *p_arg)
 
 
 
+static void    Run(void *p_arg)
+{
+    OS_ERR      err;
+    while(1)
+    {
+     OSTaskSemPend (0,OS_OPT_PEND_BLOCKING,NULL,&err);
+   
+     if(!GPIO_ReadInputDataBit(GPIOD,GPIO_Pin_0)||!GPIO_ReadInputDataBit(GPIOD,GPIO_Pin_3))     //前左  右前      低电平（即检测到黑线）
+     {
+         RightUp_PWM=Correct_Up_PWM;
+         RightBack_PWM=Correct_Up_PWM;
+         LeftUp_PWM=Correct_Back_PWM;
+         LeftBack_PWM=Correct_Back_PWM;
+     }
 
+     else if(!GPIO_ReadInputDataBit(GPIOD,GPIO_Pin_1)||!GPIO_ReadInputDataBit(GPIOD,GPIO_Pin_5))    //前右  右后
+     {
+         RightUp_PWM=Correct_Back_PWM;
+         RightBack_PWM=Correct_Back_PWM;
+         LeftUp_PWM=Correct_Up_PWM;
+         LeftBack_PWM=Correct_Up_PWM;
+     }
+     
+     else
+     {
+         RightUp_PWM=Goal_RightUp_PWM;
+         RightBack_PWM=Goal_RightBack_PWM;
+         LeftUp_PWM=Goal_LeftUp_PWM;
+         LeftBack_PWM=Goal_LeftBack_PWM;                  
+     }    
+            
+     PID_PWM_Adujust(LeftUp_PWM,LeftBack_PWM,RightUp_PWM,RightBack_PWM);
+    }        
+    
+}
 
 
 

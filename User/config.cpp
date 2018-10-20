@@ -130,7 +130,21 @@ void Key_Init()
     
 }    
     
+void Senor_Init()
+{
+    GPIO Senor1(GPIOD,GPIO_Pin_0); 
+    Senor1.mode(GPIO_Mode_IPU,GPIO_Speed_50MHz);
     
+    GPIO Senor2(GPIOD,GPIO_Pin_1); 
+    Senor1.mode(GPIO_Mode_IPU,GPIO_Speed_50MHz);
+
+    GPIO Senor3(GPIOD,GPIO_Pin_3); 
+    Senor1.mode(GPIO_Mode_IPU,GPIO_Speed_50MHz);
+
+    GPIO Senor4(GPIOD,GPIO_Pin_5); 
+    Senor1.mode(GPIO_Mode_IPU,GPIO_Speed_50MHz);    
+    
+}     
 
 
 
