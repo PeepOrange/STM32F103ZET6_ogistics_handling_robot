@@ -24,8 +24,7 @@ OS_TCB  Run_TCB;            //循迹+PID模块
 
 
 //当前车子行驶方向
-Diretion  Car_Dir;
-
+Diretion  Car_Dir=Test_Dir;
 
 
 
@@ -41,7 +40,8 @@ uint8_t ucArray [ 4 ] [ 4 ];   //声明内存分区大小
 void User_main()
 {
     OS_ERR      err;
-
+    Pos_X=0;
+    Pos_Y=0;
     OSSchedRoundRobinCfg((CPU_BOOLEAN   )DEF_ENABLED,          //使能时间片轮转调度
                         (OS_TICK       )0,                    //把 OSCfg_TickRate_Hz / 10 设为默认时间片值
                         (OS_ERR       *)&err );               //返回错误类型
@@ -179,30 +179,39 @@ static void    Run(void *p_arg)
     while(1)
     {
      OSTaskSemPend (0,OS_OPT_PEND_BLOCKING,NULL,&err);
-   
-     if(!GPIO_ReadInputDataBit(GPIOD,GPIO_Pin_0)||!GPIO_ReadInputDataBit(GPIOD,GPIO_Pin_3))     //前左  右前      低电平（即检测到黑线）
-     {
-         RightUp_PWM=Correct_Up_PWM;
-         RightBack_PWM=Correct_Up_PWM;
-         LeftUp_PWM=Correct_Back_PWM;
-         LeftBack_PWM=Correct_Back_PWM;
-     }
-
-     else if(!GPIO_ReadInputDataBit(GPIOD,GPIO_Pin_1)||!GPIO_ReadInputDataBit(GPIOD,GPIO_Pin_5))    //前右  右后
-     {
-         RightUp_PWM=Correct_Back_PWM;
-         RightBack_PWM=Correct_Back_PWM;
-         LeftUp_PWM=Correct_Up_PWM;
-         LeftBack_PWM=Correct_Up_PWM;
-     }
-     
-     else
-     {
-         RightUp_PWM=Goal_RightUp_PWM;
-         RightBack_PWM=Goal_RightBack_PWM;
-         LeftUp_PWM=Goal_LeftUp_PWM;
-         LeftBack_PWM=Goal_LeftBack_PWM;                  
-     }    
+     switch(Car_Dir)
+        {
+         case UP:
+         {
+             Run_Up();
+             Up_Position();
+             break;
+         }
+         case Back:
+         {
+             Run_Back();
+             Back_Position();   
+             break;
+         }
+         case Left:
+         {             
+             Run_Left();
+             Left_Position();
+             break;
+         }
+         case Right:
+         {
+             Run_Right();
+             Right_Position();
+             break;
+         }
+         case Stop:
+         {
+             Run_Stop();
+             break;
+         }         
+        }
+    
             
      PID_PWM_Adujust(LeftUp_PWM,LeftBack_PWM,RightUp_PWM,RightBack_PWM);
     }        

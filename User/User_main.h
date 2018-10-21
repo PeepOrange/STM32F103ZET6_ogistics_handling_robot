@@ -31,7 +31,7 @@ static CPU_STK   USART1_Get_STK[Key1_Scan_STK_SIZE];
 extern  OS_TCB  Run_TCB;
 static void    Run(void *p_arg);
 #define  Run_PRIO  1
-#define  Run_STK_SIZE 256
+#define  Run_STK_SIZE 512
 static CPU_STK   Run_STK[Run_STK_SIZE];  
 
 

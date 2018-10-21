@@ -34,6 +34,8 @@ extern "C"
 {
 #endif 
 
+//X 、Y 轴坐标
+char Pos_X,Pos_Y;
 
 
  PID  LeftUp_PID_Mortor={0,0,0,0,Encoder_read_num_Proportion,Encoder_read_num_Integral,Encoder_read_num_Derivative};
@@ -133,16 +135,30 @@ void Key_Init()
 void Senor_Init()
 {
     GPIO Senor1(GPIOD,GPIO_Pin_0); 
-    Senor1.mode(GPIO_Mode_IPU,GPIO_Speed_50MHz);
+    Senor1.mode(GPIO_Mode_IN_FLOATING,GPIO_Speed_50MHz);
     
     GPIO Senor2(GPIOD,GPIO_Pin_1); 
-    Senor1.mode(GPIO_Mode_IPU,GPIO_Speed_50MHz);
+    Senor2.mode(GPIO_Mode_IN_FLOATING,GPIO_Speed_50MHz);
 
     GPIO Senor3(GPIOD,GPIO_Pin_3); 
-    Senor1.mode(GPIO_Mode_IPU,GPIO_Speed_50MHz);
+    Senor3.mode(GPIO_Mode_IN_FLOATING,GPIO_Speed_50MHz);
 
     GPIO Senor4(GPIOD,GPIO_Pin_5); 
-    Senor1.mode(GPIO_Mode_IPU,GPIO_Speed_50MHz);    
+    Senor4.mode(GPIO_Mode_IN_FLOATING,GPIO_Speed_50MHz);
+
+    GPIO Senor5(GPIOD,GPIO_Pin_9); 
+    Senor5.mode(GPIO_Mode_IN_FLOATING,GPIO_Speed_50MHz);
+    
+    GPIO Senor6(GPIOD,GPIO_Pin_10); 
+    Senor6.mode(GPIO_Mode_IN_FLOATING,GPIO_Speed_50MHz);
+    
+    GPIO Senor7(GPIOD,GPIO_Pin_11); 
+    Senor7.mode(GPIO_Mode_IN_FLOATING,GPIO_Speed_50MHz);
+
+    GPIO Senor8(GPIOD,GPIO_Pin_12); 
+    Senor8.mode(GPIO_Mode_IN_FLOATING,GPIO_Speed_50MHz);
+
+    
     
 }     
 
@@ -249,15 +265,18 @@ void OLED_Init()
 {
     OLED_GPIO  oled_def;
     oled_def.ID_Adress=0x3c;//OLED的从机地址
-    oled_def.SCL=new GPIO(GPIOD,GPIO_Pin_2);
-    oled_def.SDA=new GPIO(GPIOD,GPIO_Pin_0);
+    oled_def.SCL=new GPIO(GPIOD,GPIO_Pin_8);
+    oled_def.SDA=new GPIO(GPIOD,GPIO_Pin_7);
     OLED oled(&oled_def);								 
     oled.Init_Gpio();
     oled.Inti();
     
     oled.Printf(50,3,"Red  : ?");
-    oled.Printf(50,5,"Blue : ?");
-    oled.Printf(50,7,"Green: ?");
+    oled.Printf(50,4,"Blue : ?");
+    oled.Printf(50,5,"Green: ?");
+    oled.Printf(50,6,"Pos_X: 0");
+    oled.Printf(50,7,"Pos_y: 0");
+
     
 
     oled.ShowChinese(30,0,0);
@@ -274,22 +293,7 @@ void OLED_Init()
 
 
 
-void Oled_PID(float UpLeft,float UpRight,float BackLeft,float BackRight)
-{
-    OLED_GPIO  oled_def;
-    oled_def.ID_Adress=0x3c;//OLED的从机地址
-    oled_def.SCL=new GPIO(GPIOD,GPIO_Pin_2);
-    oled_def.SDA=new GPIO(GPIOD,GPIO_Pin_0);
-    OLED oled(&oled_def);	
 
-      oled.Printf(90,3,"%.2f",UpLeft);
-      oled.Printf(90,4,"%.2f",UpRight);      
-      oled.Printf(90,5,"%.2f",BackLeft);
-      oled.Printf(90,6,"%.2f",BackRight);   
-    delete oled_def.SCL;
-    delete oled_def.SDA;    
-    
-}
 
 
 void  Encoder_Inti()
@@ -544,9 +548,236 @@ void TIM6_Inti()					//开启定时器6，每次记数1us，记5000次数更新，即5ms，更新时产
 }
 
 
+void Run_Up()
+{
+      if(!GPIO_ReadInputDataBit(GPIOD,GPIO_Pin_0)&&!GPIO_ReadInputDataBit(GPIOD,GPIO_Pin_1))
+      {
+         RightUp_PWM=Goal_PWM;
+         RightBack_PWM=Goal_PWM;
+         LeftUp_PWM=Goal_PWM;
+         LeftBack_PWM=Goal_PWM;               
+      }                 
+     else if(!GPIO_ReadInputDataBit(GPIOD,GPIO_Pin_0))     //前左  右前      低电平（即检测到黑线）
+     {
+         RightUp_PWM=Correct_Up_PWM;
+         RightBack_PWM=Correct_Up_PWM;
+         LeftUp_PWM=Correct_Back_PWM;
+         LeftBack_PWM=Correct_Back_PWM;
+     }
+
+     else if(!GPIO_ReadInputDataBit(GPIOD,GPIO_Pin_1))    //前右  右后
+     {
+         RightUp_PWM=Correct_Back_PWM;
+         RightBack_PWM=Correct_Back_PWM;
+         LeftUp_PWM=Correct_Up_PWM;
+         LeftBack_PWM=Correct_Up_PWM;
+     }
+     
+     else
+     {
+         RightUp_PWM=Goal_PWM;
+         RightBack_PWM=Goal_PWM;
+         LeftUp_PWM=Goal_PWM;
+         LeftBack_PWM=Goal_PWM;                  
+     }        
+       
+}
+
+void Run_Right()
+{
+      if(!GPIO_ReadInputDataBit(GPIOD,GPIO_Pin_3)&&!GPIO_ReadInputDataBit(GPIOD,GPIO_Pin_5))
+      {
+         RightUp_PWM=Goal_PWM;
+         RightBack_PWM=-Goal_PWM;
+         LeftUp_PWM=-Goal_PWM;
+         LeftBack_PWM=Goal_PWM;                          
+      }                 
+     else if(!GPIO_ReadInputDataBit(GPIOD,GPIO_Pin_3)&&GPIO_ReadInputDataBit(GPIOD,GPIO_Pin_5))     //前左  右前      低电平（即检测到黑线）
+     {
+         RightUp_PWM=Correct_Up_PWM;
+         RightBack_PWM=Correct_Up_PWM;
+         LeftUp_PWM=Correct_Back_PWM;
+         LeftBack_PWM=Correct_Back_PWM;
+     }
+
+     else if(GPIO_ReadInputDataBit(GPIOD,GPIO_Pin_3)&&!GPIO_ReadInputDataBit(GPIOD,GPIO_Pin_5))    //前右  右后
+     {
+         RightUp_PWM=Correct_Back_PWM;
+         RightBack_PWM=Correct_Back_PWM;
+         LeftUp_PWM=Correct_Up_PWM;
+         LeftBack_PWM=Correct_Up_PWM;
+     }
+     
+     else
+     {
+         RightUp_PWM=Goal_PWM;
+         RightBack_PWM=-Goal_PWM;
+         LeftUp_PWM=-Goal_PWM;
+         LeftBack_PWM=Goal_PWM;                  
+     }        
+       
+}
 
 
 
+
+void Run_Left()
+{
+      if(!GPIO_ReadInputDataBit(GPIOD,GPIO_Pin_11)&&!GPIO_ReadInputDataBit(GPIOD,GPIO_Pin_12))
+      {
+         RightUp_PWM=-Goal_PWM;
+         RightBack_PWM=Goal_PWM;
+         LeftUp_PWM=Goal_PWM;
+         LeftBack_PWM=-Goal_PWM;              
+      }                 
+     else if(!GPIO_ReadInputDataBit(GPIOD,GPIO_Pin_11)&&GPIO_ReadInputDataBit(GPIOD,GPIO_Pin_12))     //前左  右前      低电平（即检测到黑线）
+     {
+         RightUp_PWM=Correct_Up_PWM;
+         RightBack_PWM=Correct_Up_PWM;
+         LeftUp_PWM=Correct_Back_PWM;
+         LeftBack_PWM=Correct_Back_PWM;
+         
+      
+         
+     }
+
+     else if(GPIO_ReadInputDataBit(GPIOD,GPIO_Pin_11)&&!GPIO_ReadInputDataBit(GPIOD,GPIO_Pin_12))    //前右  右后
+     {
+         RightUp_PWM=Correct_Back_PWM;
+         RightBack_PWM=Correct_Back_PWM;
+         LeftUp_PWM=Correct_Up_PWM;
+         LeftBack_PWM=Correct_Up_PWM;
+      
+        
+     }
+     
+     else
+     {
+         RightUp_PWM=-Goal_PWM;
+         RightBack_PWM=Goal_PWM;
+         LeftUp_PWM=Goal_PWM;
+         LeftBack_PWM=-Goal_PWM;                  
+     }        
+       
+}
+
+
+
+
+void Run_Back()
+{
+      if(!GPIO_ReadInputDataBit(GPIOD,GPIO_Pin_9)&&!GPIO_ReadInputDataBit(GPIOD,GPIO_Pin_10))
+      {
+         RightUp_PWM=-Goal_PWM;
+         RightBack_PWM=-Goal_PWM;
+         LeftUp_PWM=-Goal_PWM;
+         LeftBack_PWM=-Goal_PWM;               
+      }                 
+     else if(!GPIO_ReadInputDataBit(GPIOD,GPIO_Pin_9))     //前左  右前      低电平（即检测到黑线）
+     {
+         RightUp_PWM=Correct_Up_PWM;
+         RightBack_PWM=Correct_Up_PWM;
+         LeftUp_PWM=Correct_Back_PWM;
+         LeftBack_PWM=Correct_Back_PWM;        
+     }
+
+     else if(!GPIO_ReadInputDataBit(GPIOD,GPIO_Pin_10))    //前右  右后
+     {
+         RightUp_PWM=Correct_Back_PWM;
+         RightBack_PWM=Correct_Back_PWM;
+         LeftUp_PWM=Correct_Up_PWM;
+         LeftBack_PWM=Correct_Up_PWM;       
+     }
+     
+     else
+     {
+         RightUp_PWM=-Goal_PWM;
+         RightBack_PWM=-Goal_PWM;
+         LeftUp_PWM=-Goal_PWM;
+         LeftBack_PWM=-Goal_PWM;                  
+     }        
+       
+}
+
+
+
+void Run_Stop()
+{
+     RightUp_PWM=0;
+     RightBack_PWM=0;
+     LeftUp_PWM=0;
+     LeftBack_PWM=0;    
+    
+}
+
+
+
+void Up_Position()
+{
+    if(!GPIO_ReadInputDataBit(GPIOD,GPIO_Pin_3)&&!GPIO_ReadInputDataBit(GPIOD,GPIO_Pin_5)&&!GPIO_ReadInputDataBit(GPIOD,GPIO_Pin_11)&&!GPIO_ReadInputDataBit(GPIOD,GPIO_Pin_12))
+    {
+    Pos_Y++; 
+    OLED_GPIO  oled_def;
+    oled_def.ID_Adress=0x3c;//OLED的从机地址
+    oled_def.SCL=new GPIO(GPIOD,GPIO_Pin_8);
+    oled_def.SDA=new GPIO(GPIOD,GPIO_Pin_7);
+    OLED oled(&oled_def);	
+    oled.Printf(106,7,"%d",Pos_Y);
+    delete oled_def.SCL;
+    delete oled_def.SDA;   
+    }        
+    
+}
+
+
+void Left_Position()
+{
+    if(!GPIO_ReadInputDataBit(GPIOD,GPIO_Pin_0)&&!GPIO_ReadInputDataBit(GPIOD,GPIO_Pin_1)&&!GPIO_ReadInputDataBit(GPIOD,GPIO_Pin_9)&&!GPIO_ReadInputDataBit(GPIOD,GPIO_Pin_10))
+    { 
+    Pos_X--; 
+    OLED_GPIO  oled_def;
+    oled_def.ID_Adress=0x3c;//OLED的从机地址
+    oled_def.SCL=new GPIO(GPIOD,GPIO_Pin_8);
+    oled_def.SDA=new GPIO(GPIOD,GPIO_Pin_7);
+    OLED oled(&oled_def);	
+    oled.Printf(106,6,"%d",Pos_X);
+    delete oled_def.SCL;
+    delete oled_def.SDA;    
+    }        
+}
+
+void Right_Position()
+{
+    if(!GPIO_ReadInputDataBit(GPIOD,GPIO_Pin_0)&&!GPIO_ReadInputDataBit(GPIOD,GPIO_Pin_1)&&!GPIO_ReadInputDataBit(GPIOD,GPIO_Pin_9)&&!GPIO_ReadInputDataBit(GPIOD,GPIO_Pin_10))
+    {
+    Pos_X++;  
+    OLED_GPIO  oled_def;
+    oled_def.ID_Adress=0x3c;//OLED的从机地址
+    oled_def.SCL=new GPIO(GPIOD,GPIO_Pin_8);
+    oled_def.SDA=new GPIO(GPIOD,GPIO_Pin_7);
+    OLED oled(&oled_def);	
+    oled.Printf(106,6,"%d",Pos_X);
+    delete oled_def.SCL;
+    delete oled_def.SDA;       
+    }
+}
+
+
+void Back_Position()
+{
+    if(!GPIO_ReadInputDataBit(GPIOD,GPIO_Pin_3)&&!GPIO_ReadInputDataBit(GPIOD,GPIO_Pin_5)&&!GPIO_ReadInputDataBit(GPIOD,GPIO_Pin_11)&&!GPIO_ReadInputDataBit(GPIOD,GPIO_Pin_12))
+    {
+    Pos_Y--;  
+    OLED_GPIO  oled_def;
+    oled_def.ID_Adress=0x3c;//OLED的从机地址
+    oled_def.SCL=new GPIO(GPIOD,GPIO_Pin_8);
+    oled_def.SDA=new GPIO(GPIOD,GPIO_Pin_7);
+    OLED oled(&oled_def);	
+    oled.Printf(106,7,"%d",Pos_Y);
+    delete oled_def.SCL;
+    delete oled_def.SDA;       
+    }
+}
 
 
 #ifdef __cplusplus
