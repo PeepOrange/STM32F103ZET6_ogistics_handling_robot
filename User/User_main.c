@@ -14,17 +14,18 @@ Diretion;
 
 
 
+
 //任务控制块
 OS_TCB  Key1_Scan_TCB;      //按键1的任务控制块
 OS_TCB  USART1_Get_TCB;     //串口1接受到信息任务
 OS_TCB  Run_TCB;            //循迹+PID模块
-
-
+OS_TCB  Postion_TCB;        //定位任务
 
 
 
 //当前车子行驶方向
 Diretion  Car_Dir=Test_Dir;
+Steering_engine_angle_Struct  Steering_engine_angle;
 
 
 
@@ -84,8 +85,11 @@ void User_main()
                  (void       *) 0,                              //任务拓展（0表示不拓展）
                  (OS_OPT      )(OS_OPT_TASK_STK_CHK | OS_OPT_TASK_STK_CLR),     //任务选项
                  (OS_ERR     *)&err);                           //返回错误类型 
-  
-    OSTaskCreate(&Run_TCB,"寻线",Run,0,Run_PRIO,Run_STK,Run_STK_SIZE/10,Run_STK_SIZE,2,0,0,(OS_OPT_TASK_STK_CHK | OS_OPT_TASK_STK_CLR),&err);  
+      
+    Steering_engine_angle.down_Steering_angle=Test_down_Steering_angle;
+    Steering_engine_angle.hand_Steering_angle=Test_hand_Steering_angle;
+    Steering_engine_angle.mid_Steering_angle=Test_mid_Steering_angle;
+    Steering_engine_angle.up_Steering_angle=Test_up_Steering_angle;             
                  
 }
 
@@ -135,40 +139,24 @@ static void    USART1_Get(void *p_arg)
 static void    Key1_Scan(void *p_arg)
 {
     OS_ERR      err;
- 	CPU_SR_ALLOC();   
+
     while(1)
     {
-      OSTaskSemPend (0,OS_OPT_PEND_BLOCKING,NULL,&err);
-      OS_CRITICAL_ENTER();                             
-        
-      printf ( "CPU使用率：%d.%d%%\r\n",
-             OSStatTaskCPUUsage / 100, OSStatTaskCPUUsage % 100 );  
-
-      printf ( "CPU最大使用率：%d.%d%%\r\n", 
-                 OSStatTaskCPUUsageMax / 100, OSStatTaskCPUUsageMax % 100 );        
-      
-     printf ("\n\r左前轮的Kp:%.2f  Ki:%.2f  Kd:%.2f\r\n",LeftUp_PID_Mortor.Kp,LeftUp_PID_Mortor.Ki,LeftUp_PID_Mortor.Kd); 
-     printf ("左前轮的目标值:%.2f   读取值:%.2f \r\n",LeftUp_PID_Mortor.goal_point,LeftUp_PID_Mortor.read_point);    
-     printf ("左前轮的上次误差:%.2f \r\n",LeftUp_PID_Mortor.last_Error);    
-
-     printf ("\n\r左后轮的Kp:%.2f  Ki:%.2f  Kd:%.2f\r\n",LeftBack_PID_Mortor.Kp,LeftBack_PID_Mortor.Ki,LeftBack_PID_Mortor.Kd); 
-     printf ("左后轮的目标值:%.2f   读取值:%.2f \r\n",LeftBack_PID_Mortor.goal_point,LeftBack_PID_Mortor.read_point); 
-     printf ("左后轮的上次误差:%.2f \r\n",LeftBack_PID_Mortor.last_Error);   
-        
-     printf ("\n\r右前轮的Kp:%.2f  Ki:%.2f  Kd:%.2f\r\n",RightUp_PID_Mortor.Kp,RightUp_PID_Mortor.Ki,RightUp_PID_Mortor.Kd); 
-     printf ("右前轮的目标值:%.2f   读取值:%.2f \r\n",RightUp_PID_Mortor.goal_point,RightUp_PID_Mortor.read_point);       
-     printf ("右前轮的上次误差:%.2f \r\n",RightUp_PID_Mortor.last_Error);  
-        
-     printf ("\n\r右后轮的Kp:%.2f  Ki:%.2f  Kd:%.2f\r\n",RightBack_PID_Mortor.Kp,RightBack_PID_Mortor.Ki,RightBack_PID_Mortor.Kd); 
-     printf ("右后轮的目标值:%.2f   读取值:%.2f \r\n",RightBack_PID_Mortor.goal_point,RightBack_PID_Mortor.read_point); 
-     printf ("右后轮的上次误差:%.2f \r\n",RightBack_PID_Mortor.last_Error);  
-
-
-      OS_CRITICAL_EXIT();   
-
+     OSTaskSemPend (0,OS_OPT_PEND_BLOCKING,NULL,&err);
+    OSTaskCreate(&Run_TCB,"寻线",Run,0,Run_PRIO,Run_STK,Run_STK_SIZE/10,Run_STK_SIZE,2,0,0,(OS_OPT_TASK_STK_CHK | OS_OPT_TASK_STK_CLR),&err);  
+    OSTaskCreate(&Postion_TCB,"定位",Postion,0,Postion_PRIO,Postion_STK,Postion_STK_SIZE/10,Postion_STK_SIZE,2,0,0,(OS_OPT_TASK_STK_CHK | OS_OPT_TASK_STK_CLR),&err);  
+     OSTaskSemPend (0,OS_OPT_PEND_BLOCKING,NULL,&err);
+     OSTaskDel(&Run_TCB,&err);   
+     OSTaskDel(&Postion_TCB,&err);           
+     Pos_X=0;
+     Pos_Y=0;
+     Run_Stop();  
+    
     }
     
 }
+
+
 
 
 
@@ -179,30 +167,27 @@ static void    Run(void *p_arg)
     while(1)
     {
      OSTaskSemPend (0,OS_OPT_PEND_BLOCKING,NULL,&err);
+     
      switch(Car_Dir)
         {
          case UP:
          {
              Run_Up();
-             Up_Position();
              break;
          }
          case Back:
          {
              Run_Back();
-             Back_Position();   
              break;
          }
          case Left:
          {             
              Run_Left();
-             Left_Position();
              break;
          }
          case Right:
          {
              Run_Right();
-             Right_Position();
              break;
          }
          case Stop:
@@ -211,8 +196,9 @@ static void    Run(void *p_arg)
              break;
          }         
         }
-    
-            
+     if(Pos_Y==3)
+     Car_Dir=Left;
+     if(Car_Dir!=Stop)
      PID_PWM_Adujust(LeftUp_PWM,LeftBack_PWM,RightUp_PWM,RightBack_PWM);
     }        
     
@@ -224,7 +210,43 @@ static void    Run(void *p_arg)
 
 
 
-
+static void    Postion(void *p_arg)
+{
+    OS_ERR      err;
+    while(1)
+    {
+     OSTaskSemPend (0,OS_OPT_PEND_BLOCKING,NULL,&err);
+     
+     switch(Car_Dir)
+        {
+         case UP:
+         {
+             Up_Position();
+             break;
+         }
+         case Back:
+         {
+             Back_Position();   
+             break;
+         }
+         case Left:
+         {             
+             Left_Position();
+             break;
+         }
+         case Right:
+         {
+             Right_Position();
+             break;
+         }
+         case Stop:
+         {
+             break;
+         }         
+        }
+    }        
+    
+}
 
 
 

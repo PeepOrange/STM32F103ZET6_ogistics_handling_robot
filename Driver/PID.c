@@ -17,6 +17,9 @@ float	PID_Out(PID *pid)		//增量式PID调节
  -(pid->Kp+2*pid->Kd)*pid->last_Error
  +(pid->Kd)*pid->pre_Error);
        
+	pid->pre_Error=pid->last_Error;
+	pid->last_Error=this_Error;    
+    
 	return (FeedBack+pid->read_point);
 }
 

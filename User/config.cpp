@@ -21,6 +21,7 @@ extern "C"
 #include "system.h"
 #include "stm32f10x_it.h"
 #include "stm32f10x.h"                  // Device header
+#include "os.h"
 };
 #endif
 
@@ -271,11 +272,11 @@ void OLED_Init()
     oled.Init_Gpio();
     oled.Inti();
     
-    oled.Printf(50,3,"Red  : ?");
-    oled.Printf(50,4,"Blue : ?");
-    oled.Printf(50,5,"Green: ?");
-    oled.Printf(50,6,"Pos_X: 0");
-    oled.Printf(50,7,"Pos_y: 0");
+    oled.Printf(30,3,"Red  : ?");
+    oled.Printf(30,4,"Blue : ?");
+    oled.Printf(30,5,"Green: ?");
+    oled.Printf(30,6,"Pos_X: 0");
+    oled.Printf(30,7,"Pos_y: 0");
 
     
 
@@ -474,6 +475,18 @@ int16_t jud( int16_t x)
 }
 
 
+void Run_Stop()
+{
+     RightUp_PWM=0;
+     RightBack_PWM=0;
+     LeftUp_PWM=0;
+     LeftBack_PWM=0;    
+    UpLeft_PWM_Set(0); 
+    BackLeft_PWM_Set(0); 
+    UpRight_PWM_Set(0); 
+    BackRight_PWM_Set(0);     
+    
+}
 
 
 
@@ -548,6 +561,57 @@ void TIM6_Inti()					//开启定时器6，每次记数1us，记5000次数更新，即5ms，更新时产
 }
 
 
+
+
+void TIM7_Inti()					//开启定时器7，每次记数1us，记100次数更新，即0.1ms，更新时产生中断，中断优先级为1：1
+{
+	
+	TIM_TimeBaseInitTypeDef	TIM7_DriverStruct;
+	NVIC_InitTypeDef	    TIM7_ITStruct;
+	
+	RCC_APB1PeriphClockCmd(RCC_APB1Periph_TIM7, ENABLE);
+	TIM7_DriverStruct.TIM_Prescaler=35;						//APB1时钟线是36MHZ,故为35
+	TIM7_DriverStruct.TIM_CounterMode=TIM_CounterMode_Up;
+	TIM7_DriverStruct.TIM_Period=100;
+	TIM7_DriverStruct.TIM_ClockDivision=TIM_CKD_DIV1;
+	
+	TIM7_ITStruct.NVIC_IRQChannel=TIM7_IRQn;
+	TIM7_ITStruct.NVIC_IRQChannelCmd=ENABLE;
+	TIM7_ITStruct.NVIC_IRQChannelPreemptionPriority=1;
+	TIM7_ITStruct.NVIC_IRQChannelSubPriority=1;
+	
+	TIM_TimeBaseInit(TIM7, &TIM7_DriverStruct);
+	TIM_ITConfig(TIM7,TIM_IT_Update ,ENABLE);
+	NVIC_Init(&TIM7_ITStruct);
+	
+	TIM_ClearFlag(TIM7, TIM_FLAG_Update);
+	TIM_Cmd(TIM7,ENABLE);	
+}
+
+
+
+void Steering_engine_gpio_Init()
+{
+     GPIO Steering_engine_gpio(GPIOC,GPIO_Pin_0|GPIO_Pin_1|GPIO_Pin_2|GPIO_Pin_3);   
+     Steering_engine_gpio.mode(GPIO_Mode_Out_PP,GPIO_Speed_50MHz);
+}
+
+
+
+void Steering_engine_Init()
+{
+    Steering_engine_gpio_Init();
+    TIM7_Inti();
+}
+
+void Steering_engine_angle_set()
+{
+    
+    
+}
+
+
+
 void Run_Up()
 {
       if(!GPIO_ReadInputDataBit(GPIOD,GPIO_Pin_0)&&!GPIO_ReadInputDataBit(GPIOD,GPIO_Pin_1))
@@ -585,29 +649,91 @@ void Run_Up()
 
 void Run_Right()
 {
-      if(!GPIO_ReadInputDataBit(GPIOD,GPIO_Pin_3)&&!GPIO_ReadInputDataBit(GPIOD,GPIO_Pin_5))
+      
+ 
+      if(!GPIO_ReadInputDataBit(GPIOD,GPIO_Pin_11)&&!GPIO_ReadInputDataBit(GPIOD,GPIO_Pin_12)&&!GPIO_ReadInputDataBit(GPIOD,GPIO_Pin_3)&&!GPIO_ReadInputDataBit(GPIOD,GPIO_Pin_5))
       {
          RightUp_PWM=Goal_PWM;
          RightBack_PWM=-Goal_PWM;
          LeftUp_PWM=-Goal_PWM;
-         LeftBack_PWM=Goal_PWM;                          
+         LeftBack_PWM=Goal_PWM;              
       }                 
-     else if(!GPIO_ReadInputDataBit(GPIOD,GPIO_Pin_3)&&GPIO_ReadInputDataBit(GPIOD,GPIO_Pin_5))     //前左  右前      低电平（即检测到黑线）
-     {
+      else if(GPIO_ReadInputDataBit(GPIOD,GPIO_Pin_11)&&!GPIO_ReadInputDataBit(GPIOD,GPIO_Pin_12)&&!GPIO_ReadInputDataBit(GPIOD,GPIO_Pin_3)&&GPIO_ReadInputDataBit(GPIOD,GPIO_Pin_5))
+      {
          RightUp_PWM=Correct_Up_PWM;
          RightBack_PWM=Correct_Up_PWM;
          LeftUp_PWM=Correct_Back_PWM;
-         LeftBack_PWM=Correct_Back_PWM;
-     }
-
-     else if(GPIO_ReadInputDataBit(GPIOD,GPIO_Pin_3)&&!GPIO_ReadInputDataBit(GPIOD,GPIO_Pin_5))    //前右  右后
-     {
+         LeftBack_PWM=Correct_Back_PWM;                   
+      }
+      else if(!GPIO_ReadInputDataBit(GPIOD,GPIO_Pin_11)&&GPIO_ReadInputDataBit(GPIOD,GPIO_Pin_12)&&GPIO_ReadInputDataBit(GPIOD,GPIO_Pin_3)&&!GPIO_ReadInputDataBit(GPIOD,GPIO_Pin_5))
+      {
          RightUp_PWM=Correct_Back_PWM;
          RightBack_PWM=Correct_Back_PWM;
          LeftUp_PWM=Correct_Up_PWM;
-         LeftBack_PWM=Correct_Up_PWM;
-     }
-     
+         LeftBack_PWM=Correct_Up_PWM;             
+      }     
+      else if(!GPIO_ReadInputDataBit(GPIOD,GPIO_Pin_11)&&GPIO_ReadInputDataBit(GPIOD,GPIO_Pin_12)&&GPIO_ReadInputDataBit(GPIOD,GPIO_Pin_3)&&GPIO_ReadInputDataBit(GPIOD,GPIO_Pin_5))
+      {
+         RightUp_PWM=Correct_Back_PWM;
+         RightBack_PWM=Correct_Back_PWM;
+         LeftUp_PWM=Correct_Up_PWM;
+         LeftBack_PWM=Correct_Up_PWM;             
+          
+      }
+
+      else if(GPIO_ReadInputDataBit(GPIOD,GPIO_Pin_11)&&!GPIO_ReadInputDataBit(GPIOD,GPIO_Pin_12)&&GPIO_ReadInputDataBit(GPIOD,GPIO_Pin_3)&&GPIO_ReadInputDataBit(GPIOD,GPIO_Pin_5))
+      {
+         RightUp_PWM=Correct_Up_PWM;
+         RightBack_PWM=Correct_Up_PWM;
+         LeftUp_PWM=Correct_Back_PWM;
+         LeftBack_PWM=Correct_Back_PWM;                     
+      }
+      
+      else if(GPIO_ReadInputDataBit(GPIOD,GPIO_Pin_11)&&GPIO_ReadInputDataBit(GPIOD,GPIO_Pin_12)&&!GPIO_ReadInputDataBit(GPIOD,GPIO_Pin_3)&&GPIO_ReadInputDataBit(GPIOD,GPIO_Pin_5))
+      {
+         RightUp_PWM=Correct_Up_PWM;
+         RightBack_PWM=Correct_Up_PWM;
+         LeftUp_PWM=Correct_Back_PWM;
+         LeftBack_PWM=Correct_Back_PWM;                     
+      }
+      
+      
+      else if(GPIO_ReadInputDataBit(GPIOD,GPIO_Pin_11)&&GPIO_ReadInputDataBit(GPIOD,GPIO_Pin_12)&&GPIO_ReadInputDataBit(GPIOD,GPIO_Pin_3)&&!GPIO_ReadInputDataBit(GPIOD,GPIO_Pin_5))
+      {
+         RightUp_PWM=Correct_Back_PWM;
+         RightBack_PWM=Correct_Back_PWM;
+         LeftUp_PWM=Correct_Up_PWM;
+         LeftBack_PWM=Correct_Up_PWM;                      
+      } 
+
+      else if(!GPIO_ReadInputDataBit(GPIOD,GPIO_Pin_11)&&GPIO_ReadInputDataBit(GPIOD,GPIO_Pin_12)&&!GPIO_ReadInputDataBit(GPIOD,GPIO_Pin_3)&&GPIO_ReadInputDataBit(GPIOD,GPIO_Pin_5))
+      {
+         RightUp_PWM=Goal_PWM;
+         RightBack_PWM=Goal_PWM;
+         LeftUp_PWM=Goal_PWM;
+         LeftBack_PWM=Goal_PWM;                       
+      }       
+      
+      else if(GPIO_ReadInputDataBit(GPIOD,GPIO_Pin_11)&&!GPIO_ReadInputDataBit(GPIOD,GPIO_Pin_12)&&GPIO_ReadInputDataBit(GPIOD,GPIO_Pin_3)&&!GPIO_ReadInputDataBit(GPIOD,GPIO_Pin_5))
+      {
+         RightUp_PWM=-Goal_PWM;
+         RightBack_PWM=-Goal_PWM;
+         LeftUp_PWM=-Goal_PWM;
+         LeftBack_PWM=-Goal_PWM;                     
+      }       
+
+
+      else if(!GPIO_ReadInputDataBit(GPIOD,GPIO_Pin_3)&&!GPIO_ReadInputDataBit(GPIOD,GPIO_Pin_5))
+      {
+         RightUp_PWM=Correct_Up_PWM;
+         RightBack_PWM=Correct_Up_PWM;
+         LeftUp_PWM=Correct_Back_PWM;
+         LeftBack_PWM=Correct_Back_PWM;                       
+      }       
+      
+      
+      
+      
      else
      {
          RightUp_PWM=Goal_PWM;
@@ -615,7 +741,8 @@ void Run_Right()
          LeftUp_PWM=-Goal_PWM;
          LeftBack_PWM=Goal_PWM;                  
      }        
-       
+
+
 }
 
 
@@ -623,34 +750,89 @@ void Run_Right()
 
 void Run_Left()
 {
-      if(!GPIO_ReadInputDataBit(GPIOD,GPIO_Pin_11)&&!GPIO_ReadInputDataBit(GPIOD,GPIO_Pin_12))
+      if(!GPIO_ReadInputDataBit(GPIOD,GPIO_Pin_11)&&!GPIO_ReadInputDataBit(GPIOD,GPIO_Pin_12)&&!GPIO_ReadInputDataBit(GPIOD,GPIO_Pin_3)&&!GPIO_ReadInputDataBit(GPIOD,GPIO_Pin_5))
       {
          RightUp_PWM=-Goal_PWM;
          RightBack_PWM=Goal_PWM;
          LeftUp_PWM=Goal_PWM;
          LeftBack_PWM=-Goal_PWM;              
       }                 
-     else if(!GPIO_ReadInputDataBit(GPIOD,GPIO_Pin_11)&&GPIO_ReadInputDataBit(GPIOD,GPIO_Pin_12))     //前左  右前      低电平（即检测到黑线）
-     {
+      else if(GPIO_ReadInputDataBit(GPIOD,GPIO_Pin_11)&&!GPIO_ReadInputDataBit(GPIOD,GPIO_Pin_12)&&!GPIO_ReadInputDataBit(GPIOD,GPIO_Pin_3)&&GPIO_ReadInputDataBit(GPIOD,GPIO_Pin_5))
+      {
          RightUp_PWM=Correct_Up_PWM;
          RightBack_PWM=Correct_Up_PWM;
          LeftUp_PWM=Correct_Back_PWM;
-         LeftBack_PWM=Correct_Back_PWM;
-         
-      
-         
-     }
-
-     else if(GPIO_ReadInputDataBit(GPIOD,GPIO_Pin_11)&&!GPIO_ReadInputDataBit(GPIOD,GPIO_Pin_12))    //前右  右后
-     {
+         LeftBack_PWM=Correct_Back_PWM;                   
+      }
+      else if(!GPIO_ReadInputDataBit(GPIOD,GPIO_Pin_11)&&GPIO_ReadInputDataBit(GPIOD,GPIO_Pin_12)&&GPIO_ReadInputDataBit(GPIOD,GPIO_Pin_3)&&!GPIO_ReadInputDataBit(GPIOD,GPIO_Pin_5))
+      {
          RightUp_PWM=Correct_Back_PWM;
          RightBack_PWM=Correct_Back_PWM;
          LeftUp_PWM=Correct_Up_PWM;
-         LeftBack_PWM=Correct_Up_PWM;
+         LeftBack_PWM=Correct_Up_PWM;             
+      }     
+      else if(!GPIO_ReadInputDataBit(GPIOD,GPIO_Pin_11)&&GPIO_ReadInputDataBit(GPIOD,GPIO_Pin_12)&&GPIO_ReadInputDataBit(GPIOD,GPIO_Pin_3)&&GPIO_ReadInputDataBit(GPIOD,GPIO_Pin_5))
+      {
+         RightUp_PWM=Correct_Back_PWM;
+         RightBack_PWM=Correct_Back_PWM;
+         LeftUp_PWM=Correct_Up_PWM;
+         LeftBack_PWM=Correct_Up_PWM;             
+          
+      }
+
+      else if(GPIO_ReadInputDataBit(GPIOD,GPIO_Pin_11)&&!GPIO_ReadInputDataBit(GPIOD,GPIO_Pin_12)&&GPIO_ReadInputDataBit(GPIOD,GPIO_Pin_3)&&GPIO_ReadInputDataBit(GPIOD,GPIO_Pin_5))
+      {
+         RightUp_PWM=Correct_Up_PWM;
+         RightBack_PWM=Correct_Up_PWM;
+         LeftUp_PWM=Correct_Back_PWM;
+         LeftBack_PWM=Correct_Back_PWM;                     
+      }
       
-        
-     }
-     
+      else if(GPIO_ReadInputDataBit(GPIOD,GPIO_Pin_11)&&GPIO_ReadInputDataBit(GPIOD,GPIO_Pin_12)&&!GPIO_ReadInputDataBit(GPIOD,GPIO_Pin_3)&&GPIO_ReadInputDataBit(GPIOD,GPIO_Pin_5))
+      {
+         RightUp_PWM=Correct_Up_PWM;
+         RightBack_PWM=Correct_Up_PWM;
+         LeftUp_PWM=Correct_Back_PWM;
+         LeftBack_PWM=Correct_Back_PWM;                     
+      }
+      
+      
+      else if(GPIO_ReadInputDataBit(GPIOD,GPIO_Pin_11)&&GPIO_ReadInputDataBit(GPIOD,GPIO_Pin_12)&&GPIO_ReadInputDataBit(GPIOD,GPIO_Pin_3)&&!GPIO_ReadInputDataBit(GPIOD,GPIO_Pin_5))
+      {
+         RightUp_PWM=Correct_Back_PWM;
+         RightBack_PWM=Correct_Back_PWM;
+         LeftUp_PWM=Correct_Up_PWM;
+         LeftBack_PWM=Correct_Up_PWM;                      
+      } 
+
+      else if(!GPIO_ReadInputDataBit(GPIOD,GPIO_Pin_11)&&GPIO_ReadInputDataBit(GPIOD,GPIO_Pin_12)&&!GPIO_ReadInputDataBit(GPIOD,GPIO_Pin_3)&&GPIO_ReadInputDataBit(GPIOD,GPIO_Pin_5))
+      {
+         RightUp_PWM=Goal_PWM;
+         RightBack_PWM=Goal_PWM;
+         LeftUp_PWM=Goal_PWM;
+         LeftBack_PWM=Goal_PWM;                       
+      }       
+      
+      else if(GPIO_ReadInputDataBit(GPIOD,GPIO_Pin_11)&&!GPIO_ReadInputDataBit(GPIOD,GPIO_Pin_12)&&GPIO_ReadInputDataBit(GPIOD,GPIO_Pin_3)&&!GPIO_ReadInputDataBit(GPIOD,GPIO_Pin_5))
+      {
+         RightUp_PWM=-Goal_PWM;
+         RightBack_PWM=-Goal_PWM;
+         LeftUp_PWM=-Goal_PWM;
+         LeftBack_PWM=-Goal_PWM;                     
+      }       
+
+
+      else if(!GPIO_ReadInputDataBit(GPIOD,GPIO_Pin_3)&&!GPIO_ReadInputDataBit(GPIOD,GPIO_Pin_5))
+      {
+         RightUp_PWM=Correct_Up_PWM;
+         RightBack_PWM=Correct_Up_PWM;
+         LeftUp_PWM=Correct_Back_PWM;
+         LeftBack_PWM=Correct_Back_PWM;                       
+      }       
+      
+      
+      
+      
      else
      {
          RightUp_PWM=-Goal_PWM;
@@ -701,20 +883,13 @@ void Run_Back()
 
 
 
-void Run_Stop()
-{
-     RightUp_PWM=0;
-     RightBack_PWM=0;
-     LeftUp_PWM=0;
-     LeftBack_PWM=0;    
-    
-}
 
 
 
 void Up_Position()
 {
-    if(!GPIO_ReadInputDataBit(GPIOD,GPIO_Pin_3)&&!GPIO_ReadInputDataBit(GPIOD,GPIO_Pin_5)&&!GPIO_ReadInputDataBit(GPIOD,GPIO_Pin_11)&&!GPIO_ReadInputDataBit(GPIOD,GPIO_Pin_12))
+    OS_ERR err;
+    if(GPIO_ReadInputDataBit(GPIOD,GPIO_Pin_3)&&GPIO_ReadInputDataBit(GPIOD,GPIO_Pin_5))
     {
     Pos_Y++; 
     OLED_GPIO  oled_def;
@@ -722,9 +897,10 @@ void Up_Position()
     oled_def.SCL=new GPIO(GPIOD,GPIO_Pin_8);
     oled_def.SDA=new GPIO(GPIOD,GPIO_Pin_7);
     OLED oled(&oled_def);	
-    oled.Printf(106,7,"%d",Pos_Y);
+    oled.Printf(72,7,"%d",Pos_Y);
     delete oled_def.SCL;
-    delete oled_def.SDA;   
+    delete oled_def.SDA;  
+    OSTimeDly(500,OS_OPT_TIME_DLY,&err);        
     }        
     
 }
@@ -732,7 +908,7 @@ void Up_Position()
 
 void Left_Position()
 {
-    if(!GPIO_ReadInputDataBit(GPIOD,GPIO_Pin_0)&&!GPIO_ReadInputDataBit(GPIOD,GPIO_Pin_1)&&!GPIO_ReadInputDataBit(GPIOD,GPIO_Pin_9)&&!GPIO_ReadInputDataBit(GPIOD,GPIO_Pin_10))
+    if(GPIO_ReadInputDataBit(GPIOD,GPIO_Pin_0)&&GPIO_ReadInputDataBit(GPIOD,GPIO_Pin_1)&&GPIO_ReadInputDataBit(GPIOD,GPIO_Pin_9)&&GPIO_ReadInputDataBit(GPIOD,GPIO_Pin_10))
     { 
     Pos_X--; 
     OLED_GPIO  oled_def;
@@ -740,7 +916,7 @@ void Left_Position()
     oled_def.SCL=new GPIO(GPIOD,GPIO_Pin_8);
     oled_def.SDA=new GPIO(GPIOD,GPIO_Pin_7);
     OLED oled(&oled_def);	
-    oled.Printf(106,6,"%d",Pos_X);
+    oled.Printf(72,6,"%d",Pos_X);
     delete oled_def.SCL;
     delete oled_def.SDA;    
     }        
@@ -748,7 +924,7 @@ void Left_Position()
 
 void Right_Position()
 {
-    if(!GPIO_ReadInputDataBit(GPIOD,GPIO_Pin_0)&&!GPIO_ReadInputDataBit(GPIOD,GPIO_Pin_1)&&!GPIO_ReadInputDataBit(GPIOD,GPIO_Pin_9)&&!GPIO_ReadInputDataBit(GPIOD,GPIO_Pin_10))
+    if(GPIO_ReadInputDataBit(GPIOD,GPIO_Pin_0)&&GPIO_ReadInputDataBit(GPIOD,GPIO_Pin_1)&&GPIO_ReadInputDataBit(GPIOD,GPIO_Pin_9)&&GPIO_ReadInputDataBit(GPIOD,GPIO_Pin_10))
     {
     Pos_X++;  
     OLED_GPIO  oled_def;
@@ -756,7 +932,7 @@ void Right_Position()
     oled_def.SCL=new GPIO(GPIOD,GPIO_Pin_8);
     oled_def.SDA=new GPIO(GPIOD,GPIO_Pin_7);
     OLED oled(&oled_def);	
-    oled.Printf(106,6,"%d",Pos_X);
+    oled.Printf(72,6,"%d",Pos_X);
     delete oled_def.SCL;
     delete oled_def.SDA;       
     }
@@ -765,7 +941,7 @@ void Right_Position()
 
 void Back_Position()
 {
-    if(!GPIO_ReadInputDataBit(GPIOD,GPIO_Pin_3)&&!GPIO_ReadInputDataBit(GPIOD,GPIO_Pin_5)&&!GPIO_ReadInputDataBit(GPIOD,GPIO_Pin_11)&&!GPIO_ReadInputDataBit(GPIOD,GPIO_Pin_12))
+    if(GPIO_ReadInputDataBit(GPIOD,GPIO_Pin_3)&&GPIO_ReadInputDataBit(GPIOD,GPIO_Pin_5)&&GPIO_ReadInputDataBit(GPIOD,GPIO_Pin_11)&&GPIO_ReadInputDataBit(GPIOD,GPIO_Pin_12))
     {
     Pos_Y--;  
     OLED_GPIO  oled_def;
@@ -773,7 +949,7 @@ void Back_Position()
     oled_def.SCL=new GPIO(GPIOD,GPIO_Pin_8);
     oled_def.SDA=new GPIO(GPIOD,GPIO_Pin_7);
     OLED oled(&oled_def);	
-    oled.Printf(106,7,"%d",Pos_Y);
+    oled.Printf(72,7,"%d",Pos_Y);
     delete oled_def.SCL;
     delete oled_def.SDA;       
     }

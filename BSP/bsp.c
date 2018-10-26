@@ -176,6 +176,8 @@ void  BSP_Init (void)
     
  PWM_Init();  
  
+ Steering_engine_Init();
+ 
  OLED_Init();
  
  TIM6_Inti();

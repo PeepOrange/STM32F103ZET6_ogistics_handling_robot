@@ -9,11 +9,17 @@
 #define Encoder_read_num_Proportion	    25		        //比例常数(Kp)
 #define Encoder_read_num_Integral		15	            //积分常数(Ki)	Ki=(Kp*T)/Ti
 #define Encoder_read_num_Derivative		1		        //微分常数(Kd)	Kd=(Kp*Td)/T
-#define Goal_PWM                        350             //左前轮目标PWM(-1000,1000)
-#define Correct_Back_PWM                -200            //调整转向的负向一侧的PWM
-#define Correct_Up_PWM                  200             //调整转向的正向一侧的PWM
+#define Goal_PWM                        300             //目标PWM(-1000,1000)
+#define Correct_Back_PWM                -300            //调整转向的负向一侧的PWM
+#define Correct_Up_PWM                  300             //调整转向的正向一侧的PWM
 #define Reset_Time                      10000           //刷新PID调节时间，单位us [0,65535]
-#define Test_Dir                        Right            //测试方向
+#define Test_Dir                        UP            //测试方向
+#define Test_down_Steering_angle        15            //下舵机角度[10,20]
+#define Test_up_Steering_angle          15            //上舵机角度[10,20]
+#define Test_mid_Steering_angle         15            //中舵机角度[10,20]
+#define Test_hand_Steering_angle        15            //爪舵机角度[10,20]
+
+
 /*****PID参数调节*****/
 
 
@@ -74,11 +80,12 @@ void Back_Position(void);
 void LED_Init(void);
 void Uart_Init(void);       
 void Key_Init(void);       
-void PWM_Init(void) ;        //初始化产生PWM的IO口及其Timer
+void PWM_Init(void) ;                 //初始化产生PWM的IO口及其Timer
 extern void system_init(void) ;
-void OLED_Init(void);       //初始化OLED并且显示基本信息 
-void  Encoder_Inti(void);       //初始化编码器的IO口和Timer
-void TIM6_Inti(void);					//开启定时器6
+void OLED_Init(void);                 //初始化OLED并且显示基本信息 
+void  Encoder_Inti(void);             //初始化编码器的IO口和Timer
+void TIM6_Inti(void);					//开启定时器6 
+void Steering_engine_Init(void);       //开启定时器7 0.1ms一刷
 
 
 

@@ -110,7 +110,7 @@ void OLED::Printf(unsigned char  x, unsigned char  y,const char *fmt, ...)
         SetPos(x, y);
         for(j = 0; j < 6; j++)
         {
-					OLED::Write_Date(ascii[c][j]);
+		OLED::Write_Date(ascii[c][j]);
         }
         x += 6;
         j++;

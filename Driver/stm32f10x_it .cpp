@@ -22,14 +22,49 @@ void TIM6_IRQHandler()
     OSIntEnter();       //进入中断
     if(TIM_GetITStatus(TIM6,TIM_IT_Update)!=RESET)
     {
-       OSTaskSemPost(&Run_TCB,OS_OPT_POST_NONE,&err);        //向Key1_Scan任务发送任务信息量
+       OSTaskSemPost(&Run_TCB,OS_OPT_POST_NONE,&err);        //向PID+循迹任务发送任务信息量
+       OSTaskSemPost(&Postion_TCB,OS_OPT_POST_NONE,&err);        //向定位任务发送任务信息量        
     }
     TIM_ClearITPendingBit(TIM6,TIM_FLAG_Update);
     OSIntExit();       //退出中断  
 }    
     
 
+void TIM7_IRQHandler()
+{
+    static uint8_t flag;    
+    OSIntEnter();       //进入中断
+    if(TIM_GetITStatus(TIM7,TIM_IT_Update)!=RESET)
+    {
+     if(flag>=200)
+         flag=0;
+     else
+     {
+         if(flag<Steering_engine_angle.up_Steering_angle)
+               GPIOC->BSRR = GPIO_Pin_0;
+         else
+               GPIOC->BRR = GPIO_Pin_0;
 
+         if(flag<Steering_engine_angle.mid_Steering_angle)
+               GPIOC->BSRR = GPIO_Pin_1;
+         else
+               GPIOC->BRR = GPIO_Pin_1;
+         
+         if(flag<Steering_engine_angle.down_Steering_angle)
+               GPIOC->BSRR = GPIO_Pin_2;
+         else
+               GPIOC->BRR = GPIO_Pin_2;
+
+         if(flag<Steering_engine_angle.hand_Steering_angle)
+               GPIOC->BSRR = GPIO_Pin_3;
+         else
+               GPIOC->BRR = GPIO_Pin_3;                  
+     }
+     flag++;        
+    }
+    TIM_ClearITPendingBit(TIM7,TIM_FLAG_Update);
+    OSIntExit();       //退出中断  
+}    
     
     
 void EXTI4_IRQHandler()
